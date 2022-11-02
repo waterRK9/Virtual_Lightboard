@@ -1,0 +1,141 @@
+$date
+	Tue Nov  1 22:10:18 2022
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module reverse_bit_order_tb $end
+$var wire 24 ! pixel_addr [23:0] $end
+$var wire 1 " axiov $end
+$var wire 2 # axiod [1:0] $end
+$var reg 1 $ clk $end
+$var reg 8 % pixel [7:0] $end
+$var reg 1 & rst $end
+$var reg 1 ' stall $end
+$scope module reverse_bit_order $end
+$var wire 1 $ clk $end
+$var wire 8 ( pixel [7:0] $end
+$var wire 1 & rst $end
+$var wire 1 ' stall $end
+$var reg 4 ) addr_bit_counter [3:0] $end
+$var reg 9 * audio_counter [8:0] $end
+$var reg 2 + axiod [1:0] $end
+$var reg 1 " axiov $end
+$var reg 3 , byte_bit_counter [2:0] $end
+$var reg 24 - pixel_addr [23:0] $end
+$var reg 9 . pixel_counter [8:0] $end
+$var reg 2 / state [1:0] $end
+$upscope $end
+$scope begin $ivl_for_loop0 $end
+$var integer 32 0 i [31:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+b0 0
+bx /
+bx .
+bx -
+bx ,
+bx +
+bx *
+bx )
+bx (
+x'
+0&
+bx %
+0$
+bx #
+x"
+bx !
+$end
+#10000000000000
+1$
+#20000000000000
+0$
+1&
+#30000000000000
+b0 *
+b0 .
+b0 ,
+b0 )
+b0 #
+b0 +
+0"
+b0 /
+b0 !
+b0 -
+1$
+#40000000000000
+0$
+0&
+#50000000000000
+1$
+b10101010 %
+b10101010 (
+#60000000000000
+0$
+#70000000000000
+1$
+b1 0
+#80000000000000
+0$
+#90000000000000
+1$
+b10 0
+#100000000000000
+0$
+#110000000000000
+1$
+b11 0
+#120000000000000
+0$
+#130000000000000
+1$
+b100 0
+#140000000000000
+0$
+#150000000000000
+1$
+b101 0
+#160000000000000
+0$
+#170000000000000
+1$
+b110 0
+#180000000000000
+0$
+#190000000000000
+1$
+b111 0
+#200000000000000
+0$
+#210000000000000
+1$
+b1000 0
+#220000000000000
+0$
+#230000000000000
+1$
+#240000000000000
+0$
+#250000000000000
+1$
+1&
+#260000000000000
+0$
+#270000000000000
+1$
+0&
+#280000000000000
+0$
+#290000000000000
+1$
+#300000000000000
+0$
+#310000000000000
+1$

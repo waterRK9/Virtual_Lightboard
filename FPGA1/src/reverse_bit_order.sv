@@ -29,7 +29,7 @@ always_ff @(posedge clk) begin
         axiov <= 0;
         axiod <= 0;
         addr_bit_counter <= 0;
-        pixel_bit_counter <= 0;
+        byte_bit_counter <= 0;
         pixel_counter <= 0;
         audio_counter <= 0;
 
@@ -50,7 +50,7 @@ always_ff @(posedge clk) begin
             if (byte_bit_counter == 6) byte_bit_counter <= 0;
             else byte_bit_counter <= byte_bit_counter + 2;
 
-            else if (addr_bit_counter <= 22) addr_bit_counter <= addr_bit_counter + 2;
+            if (addr_bit_counter <= 22) addr_bit_counter <= addr_bit_counter + 2;
             else begin
                 addr_bit_counter <= 0;
                 state <= SendPixel;
@@ -68,7 +68,7 @@ always_ff @(posedge clk) begin
 
             axiod <= {pixel[1 + byte_bit_counter], pixel[byte_bit_counter]};
 
-            if (pixel_counter < 319) pixel_counter <= pixel_bit_counter + 1;
+            if (pixel_counter < 319) pixel_counter <= byte_bit_counter + 1;
             else begin
                 pixel_counter <= 0;
                 state <= SendAudio;
@@ -85,11 +85,12 @@ always_ff @(posedge clk) begin
         axiov <= 0;
         axiod <= 0;
         addr_bit_counter <= 0;
-        pixel_bit_counter <= 0;
+        byte_bit_counter <= 0;
         pixel_counter <= 0;
         audio_counter <= 0;
     end
 end
 
+endmodule
 
 `default_nettype wire
