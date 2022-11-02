@@ -14,7 +14,7 @@ module reverse_bit_order(
 
 logic [1:0] state;
 
-logic [3:0] addr_bit_counter;
+logic [5:0] addr_bit_counter;
 logic [2:0] byte_bit_counter;
 
 logic [8:0] pixel_counter;
@@ -50,7 +50,7 @@ always_ff @(posedge clk) begin
             if (byte_bit_counter == 6) byte_bit_counter <= 0;
             else byte_bit_counter <= byte_bit_counter + 2;
 
-            if (addr_bit_counter <= 22) addr_bit_counter <= addr_bit_counter + 2;
+            if (addr_bit_counter < 22) addr_bit_counter <= addr_bit_counter + 2;
             else begin
                 addr_bit_counter <= 0;
                 state <= SendPixel;

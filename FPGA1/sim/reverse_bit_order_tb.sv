@@ -40,11 +40,13 @@ module reverse_bit_order_tb;
         
         //Test 1: sending one pixel
         // how in the world am I going to account for the 2 cycle BRAM lag? let's ignore it for a second
-        for (int i = 0; i < 8; i = i + 1) begin
+        stall = 0;
+        for (int i = 0; i < 20; i = i + 1) begin
             if (pixel_addr == 0) pixel = 8'b10101010;
             else if (pixel_addr == 1) pixel = 8'b01010101;
             #20;
         end
+        stall = 1;
         #20;
 
         clk = 0;
