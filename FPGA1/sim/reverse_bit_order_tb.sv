@@ -11,6 +11,8 @@ module reverse_bit_order_tb;
     logic [1:0] axiod;
     logic [23:0] pixel_addr;
 
+    logic change_pixel;
+
     reverse_bit_order reverse_bit_order (
     .clk(clk),
     .rst(rst),
@@ -38,16 +40,35 @@ module reverse_bit_order_tb;
         rst = 0;
         #10
         
-        //Test 1: sending one pixel
-        // how in the world am I going to account for the 2 cycle BRAM lag? let's ignore it for a second
+        //Test 1: sending two pixels with no audio
+        // Ignoring 2-cycle audio lag, manually clocking that in
+        change_pixel = 0;
         stall = 0;
-        for (int i = 0; i < 20; i = i + 1) begin
-            if (pixel_addr == 0) pixel = 8'b10101010;
-            else if (pixel_addr == 1) pixel = 8'b01010101;
+        // sending 11 for address for error detection
+        $display("pixel_adder     axiod");
+        for (int i = 0; i < 12; i = i + 1) begin
+            pixel = 8'b11111111;
             #20;
+            $display("%b            %2b", pixel_addr[3:0], axiod);
+        end
+        //sending pixel 1 10 pattern
+        for (int i = 0; i < 4; i = i + 1) begin
+            pixel = 8'b10101010;
+            #20;
+            $display("%b            %2b", pixel_addr[3:0], axiod);
+        end
+        //sending pixel 2 01 pattern
+        for (int i = 0; i < 4; i = i + 1) begin
+            pixel = 8'b01010101;
+            #20;
+            $display("%b            %2b", pixel_addr[3:0], axiod);
         end
         stall = 1;
         #20;
+        for (int i = 0; i < 4; i = i + 1) begin
+            pixel = 8'b11111111;
+            #20;
+        end
 
         clk = 0;
         rst = 0;

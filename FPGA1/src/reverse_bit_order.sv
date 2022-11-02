@@ -65,19 +65,19 @@ always_ff @(posedge clk) begin
             end else if (addr_bit_counter <= 6) begin
                 byte_bit_counter <= byte_bit_counter + 2;
             end
-
+            // actual pixel output
             axiod <= {pixel[1 + byte_bit_counter], pixel[byte_bit_counter]};
-
+            //once 320 pixels sent, switch to sending Audio
             if (pixel_counter < 319) pixel_counter <= byte_bit_counter + 1;
             else begin
                 pixel_counter <= 0;
                 state <= SendAudio;
             end
-
         end
         // audio doesn't really "exist" rn, i am assuming we are cropping 12-bit -> 8-bit bytes >:)
         SendAudio: begin
-
+            axiov <= 1;
+            // QUESTION: How are we pumping audio into this module? 
         end
         endcase
     end else if (stall) begin //same as everything in rst, except for reseting the pixel_addr
