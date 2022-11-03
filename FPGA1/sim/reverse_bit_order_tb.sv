@@ -71,7 +71,6 @@ module reverse_bit_order_tb;
 
         //Test 2: Sending second packet, making sure we pick up from where we left off
         stall = 0;
-        #20
         // sending 11 for address for error detection
         $display("pixel_adder     axiod");
         for (int i = 0; i < 12; i = i + 1) begin
@@ -81,16 +80,23 @@ module reverse_bit_order_tb;
         end
         //sending pixel 1
         for (int i = 0; i < 4; i = i + 1) begin
-            pixel = 8'b00001111;
+            pixel = 8'b11100100;
             #20;
             $display("%b            %2b", pixel_addr[3:0], axiod);
         end
         //sending pixel 2
         for (int i = 0; i < 4; i = i + 1) begin
-            pixel = 8'b11110000;
+            pixel = 8'b11100100;
             #20;
             $display("%b            %2b", pixel_addr[3:0], axiod);
         end
+        //sending pixel 3 & 4
+        for (int i = 0; i < 8; i = i + 1) begin
+            pixel = 8'b11100100;
+            #20;
+            $display("%b            %2b", pixel_addr[3:0], axiod);
+        end
+
         stall = 1;
         #20;
         for (int i = 0; i < 12; i = i + 1) begin
