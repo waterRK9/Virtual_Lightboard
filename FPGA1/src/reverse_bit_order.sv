@@ -58,13 +58,16 @@ always_ff @(posedge clk) begin
         end
         SendPixel: begin
             axiov <= 1;
-            // cycles the byte counter every 8 bits
-            if (byte_bit_counter == 4) begin //switch to next pixel 2 cycles early to give BRAM time to change
+            //switch to next pixel 2 cycles early to give BRAM time to change
+            if (byte_bit_counter == 4) begin 
                 byte_bit_counter <= 0;
                 pixel_addr <= pixel_addr + 1;
-            end else if (addr_bit_counter <= 6) begin
-                byte_bit_counter <= byte_bit_counter + 2;
             end
+
+            // cycles the byte counter every 8 bits
+            if (byte_bit_counter == 6) byte_bit_counter <= 0;
+            else byte_bit_counter <= byte_bit_counter + 2;
+
             // actual pixel output
             axiod <= {pixel[1 + byte_bit_counter], pixel[byte_bit_counter]};
             //once 320 pixels sent, switch to sending Audio

@@ -42,7 +42,6 @@ module reverse_bit_order_tb;
         
         //Test 1: sending two pixels with no audio
         // Ignoring 2-cycle BRAM lag, manually clocking that in for now
-        change_pixel = 0;
         stall = 0;
         // sending 11 for address for error detection
         $display("pixel_adder     axiod");
@@ -53,13 +52,13 @@ module reverse_bit_order_tb;
         end
         //sending pixel 1 10 pattern
         for (int i = 0; i < 4; i = i + 1) begin
-            pixel = 8'b10101010;
+            pixel = 8'b11100100;
             #20;
             $display("%b            %2b", pixel_addr[3:0], axiod);
         end
         //sending pixel 2 01 pattern
         for (int i = 0; i < 4; i = i + 1) begin
-            pixel = 8'b01010101;
+            pixel = 8'b11100100;
             #20;
             $display("%b            %2b", pixel_addr[3:0], axiod);
         end
@@ -71,7 +70,33 @@ module reverse_bit_order_tb;
         end
 
         //Test 2: Sending second packet, making sure we pick up from where we left off
-
+        stall = 0;
+        #20
+        // sending 11 for address for error detection
+        $display("pixel_adder     axiod");
+        for (int i = 0; i < 12; i = i + 1) begin
+            pixel = 8'b11111111;
+            #20;
+            $display("%b            %2b", pixel_addr[3:0], axiod);
+        end
+        //sending pixel 1
+        for (int i = 0; i < 4; i = i + 1) begin
+            pixel = 8'b00001111;
+            #20;
+            $display("%b            %2b", pixel_addr[3:0], axiod);
+        end
+        //sending pixel 2
+        for (int i = 0; i < 4; i = i + 1) begin
+            pixel = 8'b11110000;
+            #20;
+            $display("%b            %2b", pixel_addr[3:0], axiod);
+        end
+        stall = 1;
+        #20;
+        for (int i = 0; i < 12; i = i + 1) begin
+            pixel = 8'b11111111;
+            #20;
+        end
 
         #40;
         $display("Finishing Sim");
