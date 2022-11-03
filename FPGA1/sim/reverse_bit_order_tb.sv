@@ -41,7 +41,7 @@ module reverse_bit_order_tb;
         #10
         
         //Test 1: sending two pixels with no audio
-        // Ignoring 2-cycle audio lag, manually clocking that in
+        // Ignoring 2-cycle BRAM lag, manually clocking that in for now
         change_pixel = 0;
         stall = 0;
         // sending 11 for address for error detection
@@ -65,17 +65,13 @@ module reverse_bit_order_tb;
         end
         stall = 1;
         #20;
-        for (int i = 0; i < 4; i = i + 1) begin
+        for (int i = 0; i < 12; i = i + 1) begin
             pixel = 8'b11111111;
             #20;
         end
 
-        clk = 0;
-        rst = 0;
-        #20;
-        rst = 1;
-        #20;
-        rst = 0;
+        //Test 2: Sending second packet, making sure we pick up from where we left off
+
 
         #40;
         $display("Finishing Sim");
