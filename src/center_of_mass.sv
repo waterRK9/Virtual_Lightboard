@@ -6,11 +6,11 @@ module center_of_mass (
                          input wire rst_in,
                          input wire [10:0] x_in,
                          input wire [9:0]  y_in,
-                         input wire valid_in,
-                         input wire tabulate_in,
-                         output logic [10:0] x_out,
-                         output logic [9:0] y_out,
-                         output logic valid_out);
+                         input wire valid_in, //all valid points to be added --> this comes from the mask
+                         input wire tabulate_in, //to trigger final calculation of average (when frame is over)
+                         output logic [10:0] x_com,
+                         output logic [9:0] y_com,
+                         output logic valid_com);
 
   //state params
   localparam SUMMING = 3'b000;
@@ -48,8 +48,6 @@ module center_of_mass (
   always_ff @(posedge clk_in ) begin
     if (rst_in) begin
       state <= SUMMING;
-      // x_out <= 0;
-      // y_out <= 0;
       valid_out <= 0;
       valid_pixels_count <= 0;
       x_pixel_locs <= 0;
@@ -61,8 +59,6 @@ module center_of_mass (
       case (state)
         RESTARTING: begin
           state <= SUMMING;
-          // x_out <= 0;
-          // y_out <= 0;
           valid_out <= 0;
           valid_pixels_count <= 0;
           x_pixel_locs <= 0;
@@ -100,27 +96,9 @@ module center_of_mass (
           else if (calculating_x == 0 && calculating_y == 0) begin // no longer busy
             state <= RETURNING;
           end
-          // else if (x_loc_found) begin //dividing is done!
-          //   state <= WAITING_FOR_Y;
-          // end
-          // else if (y_loc_found) begin //dividing is done!
-          //   state <= WAITING_FOR_X;
-          // end
         end
-        // WAITING_FOR_Y: begin
-        //   if (y_loc_found) begin
-        //     state <= RETURNING;
-        //   end
-        // end
-        // WAITING_FOR_X: begin
-        //   if (x_loc_found) begin
-        //     state <= RETURNING;
-        //   end
-        // end
         RETURNING: begin
           state <= RESTARTING;
-          // x_out <= x_value_out[10:0];
-          // y_out <= y_value_out[9:0];
           valid_out <= 1;
         end
       endcase
