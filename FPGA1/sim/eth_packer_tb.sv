@@ -6,15 +6,17 @@ module eth_packer_tb;
     logic rst;
     logic axiiv;
     logic [1:0] axiid;
-    logic kill, done;
+    logic stall, phy_txen;
+    logic [1:0] phy_txd;
 
     eth_packer eth_packer (
     .clk(clk),
     .rst(rst),
     .axiiv(axiiv),
     .axiid(axiid),
-    .done(done), 
-    .kill(kill)
+    .stall(stall),
+    .phy_txen(phy_txen),
+    .phy_txd(phy_txd)
     );
 
     always begin
