@@ -40,20 +40,65 @@ module eth_packer_tb;
         rst = 0;
         #10
         
-        //Test 1: Stupid short message (8 dibits)
+        //Test 1: Send header(56) + data(1280) + tail (16)
+        $display("cycle  txen  txd");
+        $display("Idle");
+        for (int i = 0; i < 47; i = i + 1) begin
+            axiiv = 1;
+            axiid = 2'b00;
+            #20;
+            $display("%d     %1b       %2b", i[10:0], phy_txen, phy_txd);
+        end
+        $display("Preamble");
+        for (int i = 0; i < 31; i = i + 1) begin
+            axiiv = 1;
+            axiid = 2'b01;
+            #20;
+            $display("%d     %1b       %2b", i[10:0], phy_txen, phy_txd);
+        end
+        axiiv = 1;
+        axiid = 2'b11;
+        #20;
+        $display("Dest Addr");
+        for (int i = 0; i < 24; i = i + 1) begin
+            axiiv = 1;
+            axiid = 2'b11;
+            #20;
+            $display("%d     %1b       %2b", i[10:0], phy_txen, phy_txd);
+        end
+        $display("Source Addr");
+        for (int i = 0; i < 24; i = i + 1) begin
+            axiiv = 1;
+            axiid = 2'b10;
+            #20;
+            $display("%d     %1b       %2b", i[10:0], phy_txen, phy_txd);
+        end
+        $display("Len");
         for (int i = 0; i < 8; i = i + 1) begin
             axiiv = 1;
-            axiid = i;
+            axiid = 2'b01;
             #20;
+            $display("%d     %1b       %2b", i[10:0], phy_txen, phy_txd);
         end
-        for (int i = 0; i < 32; i = i + 1) begin
+        $display("Data");
+        for (int i = 0; i < 20; i = i + 1) begin //1280
             axiiv = 1;
-            axiid = 2'b01;
+            axiid = 2'b11;
+            #20;
+            $display("%d     %1b       %2b", i[10:0], phy_txen, phy_txd);
+        end
+        $display("CRC32");
+        for (int i = 0; i < 16; i = i + 1) begin
+            axiiv = 0;
+            axiid = 2'b10;
+            $display("%d     %1b       %2b", i[10:0], phy_txen, phy_txd);
             #20;
         end
-        for (int i = 0; i < 32; i = i + 1) begin
+        $display("Idle");
+        for (int i = 0; i < 16; i = i + 1) begin
             axiiv = 0;
-            axiid = 2'b01;
+            axiid = 2'b00;
+            $display("%d     %1b       %2b", i[10:0], phy_txen, phy_txd);
             #20;
         end
         #20;
@@ -64,52 +109,6 @@ module eth_packer_tb;
         rst = 1;
         #20;
         rst = 0;
-
-        //Test 2: Long Boi w/ CRC
-        for (int i = 0; i < 8; i = i + 1) begin
-            axiiv = 0;
-            axiid = i;
-            #20;
-        end
-        for (int i = 166; i >= 0; i = i -2) begin
-            axiiv = 1;
-            axiid = {message1[i], message1[i+1]};
-            #20;
-        end
-        for (int i = 30; i >= 0; i = i -2) begin
-            axiiv = 1;
-            axiid = {cksum1[i], cksum1[i+1]};
-            #20;
-        end
-        for (int i = 0; i < 32; i = i + 1) begin
-            axiiv = 0;
-            axiid = 2'b01;
-            #20;
-        end
-        #20;
-
-        //Test 2: Long Boi w/o CRC
-        for (int i = 0; i < 8; i = i + 1) begin
-            axiiv = 0;
-            axiid = i;
-            #20;
-        end
-        for (int i = 166; i >= 0; i = i -2) begin
-            axiiv = 1;
-            axiid = {message1[i], message1[i+1]};
-            #20;
-        end
-        // for (int i = 30; i >= 0; i = i -2) begin
-        //     axiiv = 1;
-        //     axiid = {cksum1[i], cksum1[i+1]};
-        //     #20;
-        // end
-        for (int i = 0; i < 32; i = i + 1) begin
-            axiiv = 0;
-            axiid = 2'b01;
-            #20;
-        end
-        #20;
 
         #40;
         $display("Finishing Sim");
