@@ -300,6 +300,7 @@ module top_level(
 
   //NEW FOR LAB 04B (END)----------------------------------------------
 
+  //FRAME BUFFER FOR IMAGE + WRITING
   //Two Clock Frame Buffer:
   //Data written on 16.67 MHz (From camera)
   //Data read on 65 MHz (start of video pipeline information)
