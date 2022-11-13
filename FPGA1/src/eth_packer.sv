@@ -65,28 +65,28 @@ always_comb begin
         end
         SendPre: begin
             phy_txen = 1'b1;
-            if (dibit_counter < PREAMBLE_DIBITS) phy_txd = axiid; // 01
-            else if (dibit_counter == PREAMBLE_DIBITS) phy_txd = axiid; //11
+            if (dibit_counter < PREAMBLE_DIBITS) phy_txd = 2'b01; 
+            else if (dibit_counter == PREAMBLE_DIBITS) phy_txd = 2'b11; 
             stall = 1;
         end
         SendDestAddr: begin
             phy_txen = 1'b1;
-            phy_txd = axiid;
+            phy_txd = 2'b11; //broadcast all
             stall = 1;
         end
         SendSourceAddr: begin
             phy_txen = 1'b1;
-            phy_txd = axiid;
+            phy_txd = 2'b10; //hardcode to random source address, FPGA2 doesn't care
             stall = 1;
         end
         SendLength: begin
             phy_txen = 1'b1;
-            phy_txd = axiid;
+            phy_txd = 2'b01; //note: FPGA2 doesn't care about length either right now, we could potentially use it to error check for drops
             stall = 1;
         end
         SendData: begin
             phy_txen = 1'b1;
-            phy_txd = axiid;
+            phy_txd = axiid; //coming from reverse_bit_order
             stall = 0;
         end
         SendTail: begin
