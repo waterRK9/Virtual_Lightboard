@@ -61,7 +61,7 @@ always_ff @(posedge clk) begin
             end
         end
         RecievePixels: begin
-            //TODO: add output counting here for 320 pixels
+            //TODO: add output counting here for 320 pixels + state transition
             addr_axiov <= 0;
             if (byte_bit_counter == 6) pixel_axiov <= 1;
             else pixel_axiov <= 0;

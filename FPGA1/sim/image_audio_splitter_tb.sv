@@ -68,8 +68,33 @@ module image_audio_splitter_tb;
         if (!pixel_axiov || pixel != 8'b11100100) $display("Test2: Error in pixel"); //I should really check both pixels here
         else $display("Test2: pixel looks good!");
 
-        //Test 2: start packet + interuption + new packet
+        rst = 1;
+        #20;
+        rst = 0;
 
+        //Test 2: start packet + interuption + new packet
+        for (int i = 0; i < 12; i = i + 1) begin
+            axiiv = 1'b1;
+            axiid = 2'b01;
+            #20;
+        end
+        for (int i = 0; i < 7; i = i + 1) begin 
+            axiiv = 1'b1;
+            axiid = i;
+            #20;
+        end
+        axiiv = 1'b0;
+        #20;
+        for (int i = 0; i < 12; i = i + 1) begin
+            axiiv = 1'b1;
+            axiid = 2'b10;
+            #20;
+        end
+        for (int i = 0; i < 8; i = i + 1) begin 
+            axiiv = 1'b1;
+            axiid = i;
+            #20;
+        end
 
         #40;
         $display("Finishing Sim");
