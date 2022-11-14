@@ -111,7 +111,7 @@ module center_of_mass (
     .dividend_in(x_pixel_locs),
     .divisor_in(valid_pixels_count),
     .data_valid_in(calculate_x),
-    .quotient_out(x_out),
+    .quotient_out(x_out), // why not x_com?
     .remainder_out(remainder_holder_x),
     .data_valid_out(x_loc_found),
     .error_out(error_x),
@@ -124,7 +124,7 @@ module center_of_mass (
     .dividend_in(y_pixel_locs),
     .divisor_in(valid_pixels_count),
     .data_valid_in(calculate_y),
-    .quotient_out(y_out),
+    .quotient_out(y_out), // why not y_com?
     .remainder_out(remainder_holder_y),
     .data_valid_out(y_loc_found),
     .error_out(error_y),
