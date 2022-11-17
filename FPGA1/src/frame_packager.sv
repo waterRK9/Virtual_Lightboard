@@ -20,8 +20,8 @@ always_ff @(posedge clk) begin
         addr_axiod <= 0;
         pixel_axiod <= 0;
     end else begin
-        if (addr_axiiv) addr_axiod <= addr_axiid - 1; //to offset the +1 for when first pixel is sent in
-        else addr_axiod <= addr_axiod + 1;
+        if (addr_axiiv) addr_axiod <= addr_axiid;
+        else if (pixel_axiiv) addr_axiod <= addr_axiod + 1;
 
         if (pixel_axiiv) begin
             pixel_axiod <= pixel_axiid;

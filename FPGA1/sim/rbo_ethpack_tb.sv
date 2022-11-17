@@ -1,4 +1,5 @@
 `default_nettype none
+// iverilog -g2012 -o obj/rbo_ethpack_tb.out src/reverse_bit_order.sv src/eth_packer.sv  sim/rbo_ethpack_tb.sv
 
 module rbo_ethpack_tb;
 
@@ -11,7 +12,7 @@ module rbo_ethpack_tb;
     logic [1:0] rbo_axiod;
     logic [23:0] pixel_addr;
 
-    logic stall, phy_txen;
+    logic phy_txen;
     logic [1:0] phy_txd;
 
     reverse_bit_order reverse_bit_order (
@@ -19,8 +20,8 @@ module rbo_ethpack_tb;
     .rst(rst),
     .pixel(pixel),
     .stall(stall),
-    .axiov(axiov), 
-    .axiod(axiod),
+    .axiov(rbo_axiov), 
+    .axiod(rbo_axiod),
     .pixel_addr(pixel_addr)
     );
 
@@ -41,7 +42,7 @@ module rbo_ethpack_tb;
 
     initial begin
         $dumpfile("obj/rbo_ethpack_tb.vcd");
-        $dumpvars(0, rbo_ethpack_tb_tb);
+        $dumpvars(0, rbo_ethpack_tb);
         $display("Starting Sim");
         clk = 0;
         rst = 0;
@@ -49,35 +50,21 @@ module rbo_ethpack_tb;
         rst = 1;
         #20;
         rst = 0;
+        pixel = 8'b11111111;
         #10
         
-        //Test 1: Feeding in 2 pixels from "BRAM"
-        stall = 0;
-        // sending 11 for address for error detection
-        $display("pixel_adder     axiod");
-        for (int i = 0; i < 12; i = i + 1) begin
-            pixel = 8'b11111111;
+        //Test 1: Send header(56) + data(1280) + tail (16)
+        // $display("cycle  txen  txd");
+        // $display("Idle");
+        for (int i = 0; i < 1000; i = i + 1) begin
+            if (!stall) begin
+                pixel = 8'b11111111;
+                
+            end
             #20;
-            $display("%b            %2b", pixel_addr[3:0], axiod);
+            // $display("%d     %1b       %2b", i[10:0], phy_txen, phy_txd);
         end
-        //sending pixel 1 10 pattern
-        for (int i = 0; i < 4; i = i + 1) begin
-            pixel = 8'b11100100;
-            #20;
-            $display("%b            %2b", pixel_addr[3:0], axiod);
-        end
-        //sending pixel 2 01 pattern
-        for (int i = 0; i < 4; i = i + 1) begin
-            pixel = 8'b11100100;
-            #20;
-            $display("%b            %2b", pixel_addr[3:0], axiod);
-        end
-        stall = 1;
-        #20;
-        for (int i = 0; i < 12; i = i + 1) begin
-            pixel = 8'b11111111;
-            #20;
-        end
+        
 
         #40;
         $display("Finishing Sim");
