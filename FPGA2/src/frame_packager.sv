@@ -10,9 +10,11 @@ module frame_packager(
     input wire [7:0] pixel_axiid,
 
     output logic axiov, //for wea on BRAM
-    output logic [23:0] addr_axiod,
+    output logic [16:0] addr_axiod,
     output logic [7:0] pixel_axiod
 );
+
+// note: might add an always comb block and do everything but the count up combinationally
 
 always_ff @(posedge clk) begin
     if (rst) begin
@@ -20,7 +22,7 @@ always_ff @(posedge clk) begin
         addr_axiod <= 0;
         pixel_axiod <= 0;
     end else begin
-        if (addr_axiiv) addr_axiod <= addr_axiid;
+        if (addr_axiiv) addr_axiod <= addr_axiid[16:0]; //trunate from 24bit transmittion to 17bit BRAM address
         else if (pixel_axiiv) addr_axiod <= addr_axiod + 1;
 
         if (pixel_axiiv) begin

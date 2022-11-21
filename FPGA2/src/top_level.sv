@@ -34,6 +34,7 @@ module top_level(
     logic ether_axiov;
     logic [1:0] ether_axiod;
 
+    // Delay: 
     ether ether (
     .clk(eth_refclk),
     .rst(sys_rst),
@@ -43,6 +44,7 @@ module top_level(
     .axiod(ether_axiod)
     );
 
+    // Delay: 
     logic bitorder_axiov;
     logic [1:0] bitorder_axiod;
     bitorder bitorder (
@@ -54,6 +56,7 @@ module top_level(
     .axiod(bitorder_axiod)
     );
 
+    // Delay:
     logic firewall_axiov;
     logic [1:0] firewall_axiod;
     firewall firewall (
@@ -65,6 +68,7 @@ module top_level(
     .axiod(firewall_axiod)
     );
 
+    // Delay
     logic done;
     cksum cksum (
     .clk(eth_refclk),
@@ -76,7 +80,41 @@ module top_level(
     );
     assign led[14] = done;
 
-    
+    //Delay: 
+    logic valid_addr_in, valid_pixel_in, valid_audio_in;
+    logic [16:0] pixel_addr_in;
+    logic [7:0] pixel_in, audio_in;
+    image_audio_splitter image_audio_splitter(
+    .clk(eth_ref_clk),
+    .rst(sys_rst),
+    .axiiv(firewall_axiov), 
+    .axiid(firewall_axiod), 
+
+    .addr_axiov(valid_addr_in),
+    .pixel_axiov(valid_pixel_in), 
+    .audio_axiov(valid_audio_in), 
+
+    .addr(pixel_addr_in),
+    .pixel(pixel_in),
+    .audio(audio_in)
+    );
+
+    //Delay: 1 cycle
+    logic pixel_write_enable;
+    logic [7:0] pixel_written;
+    logic [16:0] addr_written;
+    module frame_packager(
+    .clk(eth_ref_clk),
+    .rst(sys_rst),
+    .addr_axiiv(valid_addr_in),
+    .addr_axiid(pixel_addr_in),
+    .pixel_axiiv(valid_pixel_in),
+    .pixel_axiid(pixel_in),
+
+    .axiov(pixel_write_enable),
+    .addr_axiod(addr_written),
+    .pixel_axiod(pixel_written)
+    );
 
     //FRAME BUFFER FOR IMAGE + WRITING
     //Two Clock Frame Buffer:
@@ -88,10 +126,10 @@ module top_level(
         .RAM_DEPTH(320*240))
         frame_buffer (
         //Write Side (50MHz)
-        .addra(pixel_addr_in),
-        .clka(clk_65mhz),
-        .wea(valid_pixel_rotate),
-        .dina(pixel_rotate),
+        .addra(addr_written),
+        .clka(eth_ref_clk),
+        .wea(pixel_write_enable), //question: do I need rotate here? What if I read it out without rotating?
+        .dina(pixel_written),
         .ena(1'b1),
         .regcea(1'b1),
         .rsta(sys_rst),
