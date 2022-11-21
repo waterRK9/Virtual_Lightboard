@@ -100,6 +100,7 @@ always_comb begin
             end else if (dibit_counter <= 15) begin
                 phy_txd = {cksum[1 + byte_bit_counter], cksum[byte_bit_counter]};
             end
+            stall = 1;
         end
     endcase
 end
