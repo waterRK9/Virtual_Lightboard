@@ -68,7 +68,7 @@ module top_level(
     .axiod(firewall_axiod)
     );
 
-    // Delay
+    // Delay: 
     logic done;
     cksum cksum (
     .clk(eth_refclk),
@@ -80,7 +80,7 @@ module top_level(
     );
     assign led[14] = done;
 
-    //Delay: 
+    //Delay: new pixel every four cycles, but not "pipelined"
     logic valid_addr_in, valid_pixel_in, valid_audio_in;
     logic [16:0] pixel_addr_in;
     logic [7:0] pixel_in, audio_in;
