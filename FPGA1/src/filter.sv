@@ -1,5 +1,5 @@
 
-module filter #(parameter K_SELECT=0)(
+module filter (
   input wire clk_in,
   input wire rst_in,
 
@@ -14,30 +14,11 @@ module filter #(parameter K_SELECT=0)(
   output logic [9:0] vcount_out
   );
 
-  // assign data_valid_out = data_valid_in;
-  // assign pixel_data_in = pixel_data_out;
-  // assign hcount_out = hcount_in;
-  // assign vcount_out = vcount_in;
-
   logic [2:0][15:0] buffs; //make this packed in two dimensions for iVerilog
   logic b_to_c_valid;
   logic [10:0] hcount_buff;
   logic [9:0] vcount_buff;
 
-  // buffer mbuff (
-  //   .clk_in(clk_in),
-  //   .rst_in(rst_in),
-  //   .data_valid_in(data_valid_in),
-  //   .pixel_data_in(pixel_data_in),
-  //   .hcount_in(hcount_in),
-  //   .vcount_in(vcount_in),
-  //   .data_valid_out(data_valid_out),
-  //   .line_buffer_out(buffs),
-  //   .hcount_out(hcount_out),
-  //   .vcount_out(vcount_out)
-  //   );
-
-  // assign pixel_data_out = buffs[1];
   buffer mbuff (
     .clk_in(clk_in),
     .rst_in(rst_in),

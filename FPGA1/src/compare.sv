@@ -7,17 +7,15 @@ module compare (
                 input wire [10:0] x_com_in, // from COM module
                 input wire [9:0]  y_com_in, // from COM module
                 input wire com_valid_in,
-                input wire tabulate_in,
                 input wire [10:0] hcount, // from filter
                 input wire [9:0]  vcount, // from filter 
                 input wire [5:0] y_pixel, // from rgb_to_ycrcb
-                input wire [7:0] curr_pixel, // current pixel at that spot in BRAM
                 input wire [1:0] color_select, // from switches, routed in toplevel
                 input wire write_erase_select, // from switches, routed in toplevel
-                input wire [7:0] pixel_from_bram,
+                input wire [7:0] pixel_from_bram, // current pixel at that spot in BRAM
                 output logic [16:0] pixel_addr_bram_check,
                 output logic [7:0] pixel_out_forbram,
-                output logic [16:0] pixel_addr_forbram, // TODO: check this width
+                output logic [16:0] pixel_addr_forbram,
                 output logic valid_pixel_forbram);
 
     //state params

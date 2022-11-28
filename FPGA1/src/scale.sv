@@ -5,8 +5,8 @@ module scale(
   input wire [1:0] scale_in,
   input wire [10:0] hcount_in,
   input wire [9:0] vcount_in,
-  input wire [15:0] frame_buff_in,
-  output logic [15:0] cam_out
+  input wire [7:0] frame_buff_in,
+  output logic [7:0] cam_out
 );
   //YOUR DESIGN HERE!
 
