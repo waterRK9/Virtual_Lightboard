@@ -8,6 +8,7 @@ module mirror(
   input wire [10:0] hcount_in,
   input wire [9:0] vcount_in,
   output logic [16:0] pixel_addr_out);
+  
   logic [10:0] hcount_temp;
   logic [9:0] vcount_pip;
 

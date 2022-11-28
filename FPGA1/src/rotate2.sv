@@ -4,8 +4,8 @@ module rotate2 (
   input wire [10:0] hcount_in,
   input wire [9:0] vcount_in,
   input wire data_valid_in,
-  input wire [15:0] pixel_in,
-  output logic [15:0] pixel_out,
+  input wire [7:0] pixel_in,
+  output logic [7:0] pixel_out,
   output logic [16:0] pixel_addr_out,
   output logic data_valid_out
   );
