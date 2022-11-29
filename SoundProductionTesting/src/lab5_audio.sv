@@ -41,12 +41,12 @@ module top_level(   input clk_100mhz,
     end
 
     //ADC uncomment when activating!
-    //xadc_wiz_0 my_adc ( .dclk_in(clk_100mhz), .daddr_in(8'h13), //read from 0x13 for a
-    //                    .vauxn3(vauxn3),.vauxp3(vauxp3),
-    //                    .vp_in(1),.vn_in(1),
-    //                    .di_in(16'b0),
-    //                    .do_out(adc_data),.drdy_out(adc_ready),
-    //                    .den_in(1), .dwe_in(0));
+    xadc_wiz_0 my_adc ( .dclk_in(clk_100mhz), .daddr_in(8'h13), //read from 0x13 for a
+                       .vauxn3(vauxn3),.vauxp3(vauxp3),
+                       .vp_in(1),.vn_in(1),
+                       .di_in(16'b0),
+                       .do_out(adc_data),.drdy_out(adc_ready),
+                       .den_in(1), .dwe_in(0));
  
     recorder myrec( .clk_in(clk_100mhz),.rst_in(btnd),
                     .record_in(btnc),.ready_in(sample_trigger),
@@ -88,15 +88,78 @@ module recorder(
     //generate a 440 Hz tone
     sine_generator  #(.PHASE_INCR(32'd39370534)) tone440hz(.clk_in(clk_in), .rst_in(rst_in), 
                                .step_in(ready_in), .amp_out(tone_440));                          
-    //logic [7:0] data_to_bram;
-    //logic [7:0] data_from_bram;
-    //logic [15:0] addr;
-    //logic wea;
-    //  blk_mem_gen_0(.addra(addr), .clka(clk_in), .dina(data_to_bram), .douta(data_from_bram), 
-    //                .ena(1), .wea(bram_write));                                  
+    logic [7:0] data_to_bram;
+    logic [7:0] data_from_bram;
+    logic [15:0] addr;
+    logic wea;
+    blk_mem_gen_0 mybram (.addra(addr), .clka(clk_in), .dina(data_to_bram), .douta(data_from_bram), 
+                   .ena(1), .wea(wea));    
+
+    parameter MEMORY_DEPTH = 64000;
+    logic [15:0] lastSample;
+    logic [3:0] eightCounter;      
+
+   typedef enum {Record, Playback} states;       
+   logic [1:0] state;                
     
     always_ff @(posedge clk_in)begin
-        data_out = filter_in?tone_440:tone_750; //send tone immediately to output
+      if (rst_in) begin
+        addr <= 0;
+        lastSample <= 0;
+        eightCounter <= 0;
+        state <= Playback;
+      end else begin
+        // data_out = filter_in?tone_440:tone_750; //send tone immediately to output
+        case (state)
+        Record: begin
+          // controls incrementing address every 8 samples
+          if (record_in) begin
+            if (addr < MEMORY_DEPTH - 1 && ready_in) begin
+              if (eightCounter == 8) begin
+                addr <= addr + 1;
+                lastSample <= lastSample + 1;
+              end else if (eightCounter < 8) begin
+                eightCounter <= eightCounter + 1;
+              end 
+            end
+            // control write signal sepeartely, only writing every 8 samples
+            if (addr < MEMORY_DEPTH - 1 && ready_in && eightCounter == 8) wea <= 1;
+            else wea <= 0;
+
+            data_to_bram <= mic_in;
+            data_out <= 0;
+          end else begin
+            state <= Playback;
+            addr <= 0;
+            eightCounter <= 0;
+            wea <= 0;
+          end
+        end
+        Playback: begin
+          if (record_in) begin
+            state <= Record;
+            addr <= 0;
+            lastSample <= 0;
+          end else begin
+            if (ready_in) begin
+              // controls incrementing address every 8 cycles
+              if (addr < lastSample - 1) begin
+                  if (eightCounter == 8) begin
+                    addr <= addr + 1;
+                    eightCounter <= 0;
+                  end else if (eightCounter < 8) begin
+                    eightCounter <= eightCounter + 1;
+                end
+              end else if (addr => lastSample -1) begin
+                addr <= 0;
+              end
+              data_out <= data_from_bram;
+            end
+          end
+        end
+
+        endcase
+      end
     end                            
 endmodule                              
 
