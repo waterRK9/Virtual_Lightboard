@@ -42,8 +42,6 @@ module reverse_bit_order_tb;
         
         //Test 1: sending two pixels with no audio
         // Ignoring 2-cycle BRAM lag, manually clocking that in for now
-        stall = 1;
-        #40
         stall = 0;
         // sending 11 for address for error detection
         $display("pixel_adder     axiod");

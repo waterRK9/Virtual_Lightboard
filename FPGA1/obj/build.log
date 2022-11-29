@@ -1,0 +1,68 @@
+
+****** Vivado v2022.1 (64-bit)
+  **** SW Build 3526262 on Mon Apr 18 15:47:01 MDT 2022
+  **** IP Build 3524634 on Mon Apr 18 20:55:01 MDT 2022
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+
+source /tmp/build.tcl.DyKhSe
+# exec rm -rf .Xil .gen .srcs
+# set_param board.repoPaths /home/builder/.Xilinx/Vivado/2022.1/xhub/board_store/xilinx_board_store
+# xhub::refresh_catalog [xhub::get_xstores xilinx_board_store]
+# xhub::install [xhub::get_xitems digilentinc.com:xilinx_board_store:nexys4_ddr:1.1]
+INFO: [xhubtcl 76-61] The object 'digilentinc.com:xilinx_board_store:nexys4_ddr:1.1' is already installed, to update use xhub::update command.
+# set_part xc7a100tcsg324-1
+INFO: [Coretcl 2-1500] The part has been set to 'xc7a100tcsg324-1' for the current project only. Run set_part -help for more details. To evaluate different speed grades in the current design, use the set_speed_grade command, or use the open_checkpoint -part command to change the part used by an existing checkpoint design.
+# set_property board_part digilentinc.com:nexys4_ddr:part0:1.1 [current_project]
+# read_xdc /tmp/tmp.CQjZFg/xdc/top_level.xdc
+# read_verilog -sv /tmp/tmp.CQjZFg/src/mirror.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/convolution.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/top_level.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/reverse_bit_order.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/ethernet_clk_wiz.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/crc32.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/rgb_to_ycrcb.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/vga_mux.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/rotate2.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/camera_clk_wiz.v
+# read_verilog -sv /tmp/tmp.CQjZFg/src/threshold.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/camera.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/xilinx_true_dual_port_read_first_2_clock_ram.v
+# read_verilog -sv /tmp/tmp.CQjZFg/src/kernels.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/buffer.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/eth_packer.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/image_sprite.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/filter.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/iverilog_hack.svh
+# read_verilog -sv /tmp/tmp.CQjZFg/src/clk_wiz_65mhz.v
+# read_verilog -sv /tmp/tmp.CQjZFg/src/rotate.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/vga.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/center_of_mass.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/compare.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/scale.sv
+# read_verilog -sv /tmp/tmp.CQjZFg/src/recover.sv
+# synth_design -top top_level -part xc7a100tcsg324-1
+Command: synth_design -top top_level -part xc7a100tcsg324-1
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xc7a100t'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xc7a100t'
+INFO: [Device 21-403] Loading part xc7a100tcsg324-1
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 4 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 110585
+WARNING: [Synth 8-6901] identifier 'coeffs_i' is used before its declaration [/tmp/tmp.CQjZFg/src/kernels.sv:9]
+WARNING: [Synth 8-6901] identifier 'coeffs_i' is used before its declaration [/tmp/tmp.CQjZFg/src/kernels.sv:10]
+WARNING: [Synth 8-6901] identifier 'coeffs_i' is used before its declaration [/tmp/tmp.CQjZFg/src/kernels.sv:11]
+WARNING: [Synth 8-6901] identifier 'coeffs_i' is used before its declaration [/tmp/tmp.CQjZFg/src/kernels.sv:12]
+WARNING: [Synth 8-6901] identifier 'coeffs_i' is used before its declaration [/tmp/tmp.CQjZFg/src/kernels.sv:13]
+WARNING: [Synth 8-6901] identifier 'coeffs_i' is used before its declaration [/tmp/tmp.CQjZFg/src/kernels.sv:14]
+WARNING: [Synth 8-6901] identifier 'coeffs_i' is used before its declaration [/tmp/tmp.CQjZFg/src/kernels.sv:15]
+WARNING: [Synth 8-6901] identifier 'coeffs_i' is used before its declaration [/tmp/tmp.CQjZFg/src/kernels.sv:16]
+WARNING: [Synth 8-6901] identifier 'coeffs_i' is used before its declaration [/tmp/tmp.CQjZFg/src/kernels.sv:17]
+ERROR: [Synth 8-36] 'K_SELECT' is not declared [/tmp/tmp.CQjZFg/src/filter.sv:36]
+INFO: [Synth 8-8750] module 'filter' ignored due to previous errors [/tmp/tmp.CQjZFg/src/filter.sv:50]
+Failed to read verilog '/tmp/tmp.CQjZFg/src/filter.sv'
+INFO: [Common 17-83] Releasing license: Synthesis
+7 Infos, 9 Warnings, 0 Critical Warnings and 2 Errors encountered.
+synth_design failed
+ERROR: [Common 17-69] Command failed: Synthesis failed - please see the console or run log file for details
+INFO: [Common 17-206] Exiting Vivado at Mon Nov 28 17:39:13 2022...

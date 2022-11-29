@@ -1,0 +1,53 @@
+`default_nettype none
+
+module bitorder (
+    input wire clk,
+    input wire rst,
+    input wire [7:0] pixel,
+    input wire stall,
+
+    output logic axiov, 
+    output logic [1:0] axiod,
+    output logic [23:0] pixel_addr;
+);
+
+logic [1:0] state;
+logic [3:0] byteBitCounter;
+logic [5:0] addrBitCounter;
+
+typedef enum {SendAddr, SendPixel, SendAudio} states;
+
+always @(posedge clk) begin
+    if (rst) begin
+        state <= SendAddr;
+        byteBitCounter <= 0;
+        addrBitCounter <= 0;
+        pixel_addr <= 0;
+        axiov <= 0;
+        axiod <= 0;
+    end else if (!stall) begin
+        case (state) 
+        SendAddr: begin
+            // Send Addr in MSB, LSb order
+            if (addrBitCounter <= 6) begin // 0 2 4 6
+                axiod <= {pixel_addr{17 + byteBitCounter}, pixel_addr{16 + byteBitCounter}};
+            end else if (addrBitCounter <= 14) begin // 8 10 12 14
+                
+            end else if (addrBitCounter <= 22) begin // 16 18 20 22
+            end
+
+
+        end
+        SendPixel: begin
+        end
+        SendAudio: begin
+        end
+        endcase
+    end else begin
+
+    end
+end
+
+endmodule
+`timescale 1ns / 1ps
+`default_nettype wire
