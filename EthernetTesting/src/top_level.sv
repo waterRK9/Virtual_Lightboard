@@ -39,23 +39,24 @@ module top_level(
   logic [24:0] counter;
   logic [7:0] pixel;
 
-  // always_ff @(posedge eth_refclk) begin
-  //   if (counter < 8000000) begin
-  //     counter <= counter + 1;
-  //   // end else if (counter <= 120000) begin
-  //   //   counter <= counter + 1;
-  //     stall <= 0;
-  //   end else begin
-  //     counter <= 0;
-  //     flip <= !flip;
-  //     stall = 1;
-  //   end
-  //   // if (flip) pixel <= 8'b11111111;
-  //   // else pixel <= 8'b0;
-  //   if (flip) pixel <= 8'b11111111;
-  //   else pixel <= 8'b0;
-  // end
+  always_ff @(posedge eth_refclk) begin
+    if (counter < 8000000) begin
+      counter <= counter + 1;
+    // end else if (counter <= 120000) begin
+    //   counter <= counter + 1;
+      stall <= 0;
+    end else begin
+      counter <= 0;
+      flip <= !flip;
+      stall = 1;
+    end
+    // if (flip) pixel <= 8'b11111111;
+    // else pixel <= 8'b0;
+    if (flip) pixel <= 8'b11111111;
+    else pixel <= 8'b0;
+  end
 
+  logic stall;
   logic rbo_axiov;
   logic [1:0] rbo_axiod;
   logic [23:0] rbo_pixel_addr;
@@ -71,13 +72,13 @@ module top_level(
     .pixel_addr(rbo_pixel_addr) //TODO: fill this in
   );
 
-  logic stall; //placeholder, delete
+  logic stall1; //placeholder, delete
   eth_packer packer(
     .clk(eth_refclk),
     .rst(sys_rst),
     .axiiv(rbo_axiov), //TODO: fill this in
     .axiid(rbo_axiod), //TODO: fill this in
-    .stall(stall), //TODO: fill this in
+    .stall(stall1), //TODO: fill this in
     .phy_txen(eth_txen), //TODO: fill this in
     .phy_txd(eth_txd) //TODO: fill this in
   );
@@ -87,8 +88,8 @@ module top_level(
     aggregate aggregate (
     .clk(eth_refclk),
     .rst(sys_rst),
-    .axiiv(eth_txen),
-    .axiid(eth_txd),
+    .axiiv(rbo_axiov),
+    .axiid(rbo_axiod),
     .axiov(aggregate_axiov),
     .axiod(aggregate_axiod)
     );
