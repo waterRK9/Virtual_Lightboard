@@ -241,13 +241,31 @@ module top_level(
     .y_pixel(y), // TODO: finish pipelining
     .color_select(sw[2:1]),
     .write_erase_select(sw[0]),
-    .pixel_from_bram(pixel_out_portb), // current pixel from BRAM (PORT B)
-    .pixel_addr_bram_check(pixel_addr_portb), // current address to search in BRAM (PORT B)
-    .pixel_out_forbram(pixel_in_porta),
-    .pixel_addr_forbram(pixel_addr_porta),
-    .valid_pixel_forbram(pixel_valid_porta)
+    .pixel_from_bram(pixel_out_porta_compare), // current pixel from BRAM (PORT B)
+    .pixel_for_bram(pixel_in_porta_compare),
+    .pixel_out_forbram(pixel_in_porta_compare),
+    .pixel_addr_forbram(pixel_addr_porta_compare),
+    .valid_pixel_forbram(pixel_valid_porta_compare),
+    .pixelread_forvga_valid(vgareadpixel),
+    .pixeladdr_forvga_valid(vgasndaddr)
   );
 
+  //BRAM MANAGER: combinational logic to handle what is wired to BRAM
+  always_comb begin
+    if (vgasndaddr == 1 || vgareadpixel == 1) begin
+      pixel_addr_porta = pixel_addr_vga; // TODO: use this pixel in vga
+      pixel_valid_porta = 0;
+      pixel_in_porta = 8'b0;
+      pixel_out_porta = pixel_out_vga; // TODO: use this pixel in vga
+    end
+    else begin
+      pixel_addr_porta = pixel_addr_porta_compare;
+      pixel_valid_porta = pixel_valid_porta_compare;
+      pixel_in_porta = pixel_in_porta_compare;
+      pixel_out_porta = pixel_out_porta_compare;
+    end
+  end
+  
   //FRAME BUFFER FOR IMAGE + WRITING
   //Two Clock Frame Buffer:
   //Data written on 16.67 MHz (From camera)
@@ -257,7 +275,7 @@ module top_level(
     .RAM_WIDTH(8),
     .RAM_DEPTH(320*240))
     frame_buffer (
-    //Write Side (16.67MHz)
+    //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
     .addra(pixel_addr_porta),
     .clka(clk_65mhz),
     .wea(pixel_valid_porta),
@@ -265,11 +283,11 @@ module top_level(
     .ena(1'b1),
     .regcea(1'b1),
     .rsta(sys_rst),
-    .douta(pixel_out_porta), // never read using port A
-    //Read Side (65 MHz)
+    .douta(pixel_out_porta),
+    //Read Side (50 MHz) -- FOR ETHERNET
     .addrb(pixel_addr_portb),
     .dinb(16'b0),
-    .clkb(clk_65mhz),
+    .clkb(clk_50mhz),
     .web(1'b0), // never write using port B
     .enb(1'b1),
     .regceb(1'b1),
@@ -294,7 +312,7 @@ module top_level(
     .scale_in(2'b01),
     .hcount_in(hcount_pipe[3]), //TODO: needs to use pipelined signal (PS2)
     .vcount_in(vcount_pipe[3]), //TODO: needs to use pipelined signal (PS2)
-    .frame_buff_in(pixel_out_portb),
+    .frame_buff_in(pixel_out_vga),
     .cam_out(scaled_pixel_to_display)
   );
   //Based on current hcount and vcount as well as
@@ -312,11 +330,11 @@ module top_level(
   //for CHECKOFF 3!
   mirror mirror_m(
     .clk_in(clk_65mhz),
-    .mirror_in(1'b1),
     .scale_in(2'b01),
-    .hcount_in(hcount), //
+    .mirror_in(1'b1),
+    .hcount_in(hcount), 
     .vcount_in(vcount),
-    .pixel_addr_out(pixel_addr_mirrored)
+    .pixel_addr_out(pixel_addr_vga)
   );
   //VGA mux
   vga_mux (

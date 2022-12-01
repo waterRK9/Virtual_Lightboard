@@ -13,15 +13,29 @@ module compare (
                 input wire [1:0] color_select, // from switches, routed in toplevel
                 input wire write_erase_select, // from switches, routed in toplevel
                 input wire [7:0] pixel_from_bram, // current pixel at that spot in BRAM
-                output logic [16:0] pixel_addr_bram_check,
-                output logic [7:0] pixel_out_forbram,
-                output logic [16:0] pixel_addr_forbram,
-                output logic valid_pixel_forbram);
+                //output logic [16:0] pixel_addr_bram_check,
+                output logic [7:0] pixel_for_bram, // pixel to write into the BRAM
+                output logic [16:0] pixel_addr_forbram, // either the pixel that we want to check or the pixel that we want to store (depends on valid signal)
+                output logic valid_pixel_forbram,
+                //output logic [7:0] pixel_out_forvga,
+                output logic pixelread_forvga_valid, // tells vga to read output of BRAM request because it is ready
+                output logic pixeladdr_forvga_valid // tells vga to send address to read
+            );
 
-    //state params
+    //state params (outer FSM)
     localparam RESTING = 2'b00;
     localparam COM_RECEIVED = 2'b01;
     localparam COMPARING = 2'b10;
+
+    //state params (inner FSM)
+    localparam CALCULATE = 3'b000;
+    localparam CHECK = 3'b001;
+    localparam WAIT1 = 3'b010;
+    localparam RECEIVE = 3'b011;
+    localparam STORE = 3'b100;
+    localparam WAIT2 = 3'b101;
+    localparam VGAREAD = 3'b110;
+    localparam WAIT3 = 3'b111;
 
     //color params
     localparam YELLOW = 8'b11000000; // 11 is MSBs indicates that it is written on
@@ -29,10 +43,8 @@ module compare (
     localparam GREEN = 8'b11000010;
     localparam RED = 8'b11000011;
     
-    logic [2:0] state;
-
-    logic [3:0][5:0] pixel_buffer;
-    logic [3:0][16:0] address_buffer;
+    logic [1:0] outer_state;
+    logic [2:0] inner_state;
 
     logic [10:0] x_com_current;
     logic [9:0] y_com_current;
@@ -40,234 +52,218 @@ module compare (
     logic [8:0][16:0] com_addresses_around;
     logic com_received_flag;
 
-    assign pixel_addr_bram_check = address_buffer[0];
-    assign pixel_out_forbram = pixel_buffer[3];
-    assign pixel_addr_forbram = address_buffer[3];
-
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
-            state <= RESTING;
+            inner_state <= CHECK;
             valid_pixel <= 0;
-            pixel_buffer[3] <= 0;
-            pixel_buffer[2] <= 0;
-            pixel_buffer[1] <= 0;
-            pixel_buffer[0] <= 0;
-            address_buffer[3] <= 0;
-            address_buffer[2] <= 0;
-            address_buffer[1] <= 0;
-            address_buffer[0] <= 0;
+            // resets com_addresses to the top left corner since no COM has been received yet
+            com_addresses_around[0] <= 0;
+            com_addresses_around[1] <= 0;
+            com_addresses_around[2] <= 0;
+            com_addresses_around[3] <= 0;
+            com_addresses_around[4] <= 0;
+            com_addresses_around[5] <= 0;
+            com_addresses_around[6] <= 0;
+            com_addresses_around[7] <= 0;
+            com_addresses_around[8] <= 0;
         end
         else begin
-            case (state)
-                RESTING: begin
-                    valid_pixel <= 0;
-                    pixel_buffer[3] <= 0;
-                    pixel_buffer[2] <= 0;
-                    pixel_buffer[1] <= 0;
-                    pixel_buffer[0] <= 0;
-                    address_buffer[3] <= 0;
-                    address_buffer[2] <= 0;
-                    address_buffer[1] <= 0;
-                    address_buffer[0] <= 0;
-                    if (com_valid_in) begin
-                        state <= COM_RECEIVED;
-                        com_received_flag <= 1;
-                        x_com_current <= x_com_in;
-                        y_com_current <= y_com_in;
-                        com_address <= (y_com_in)*320 + x_com_in;
+            if (com_valid_in) begin // new COM received, need to calculate with the new one instead -- not sure about this?
+                com_received_flag <= 1;
+                x_com_current <= x_com_in;
+                y_com_current <= y_com_in;
+                com_address <= (y_com_in)*320 + x_com_in;
+            end
+            if (com_received_flag) begin // find the 9 pixels around the COM
+                com_received_flag <= 0;
+                if (x_com_in > 0 && x_com_in < 319) begin
+                    if (y_com_in > 0 && y_com_in < 239) begin
+                        com_addresses_around[0] <= com_address - 321;
+                        com_addresses_around[1] <= com_address - 320;
+                        com_addresses_around[2] <= com_address - 319;
+                        com_addresses_around[3] <= com_address - 1;
+                        com_addresses_around[4] <= com_address;
+                        com_addresses_around[5] <= com_address + 1;
+                        com_addresses_around[6] <= com_address + 319;
+                        com_addresses_around[7] <= com_address + 320;
+                        com_addresses_around[8] <= com_address + 321;
+                    end
+                    else if (y_com_in == 0) begin
+                        com_addresses_around[0] <= 16'h12C01; // pixel outside frame
+                        com_addresses_around[1] <= 16'h12C01;
+                        com_addresses_around[2] <= 16'h12C01;
+                        com_addresses_around[3] <= com_address - 1;
+                        com_addresses_around[4] <= com_address;
+                        com_addresses_around[5] <= com_address + 1;
+                        com_addresses_around[6] <= com_address + 319;
+                        com_addresses_around[7] <= com_address + 320;
+                        com_addresses_around[8] <= com_address + 321;
+                    end
+                    else if (y_com_in == 239) begin
+                        com_addresses_around[0] <= com_address - 321;
+                        com_addresses_around[1] <= com_address - 320;
+                        com_addresses_around[2] <= com_address - 319;
+                        com_addresses_around[3] <= com_address - 1;
+                        com_addresses_around[4] <= com_address;
+                        com_addresses_around[5] <= com_address + 1;
+                        com_addresses_around[6] <= 16'h12C01;
+                        com_addresses_around[7] <= 16'h12C01;
+                        com_addresses_around[8] <= 16'h12C01;
+                    end
+                end else if (x_com_in == 319) begin // this means we are in the rightmost line
+                    if (y_com_in > 0 && y_com_in < 239) begin
+                        com_addresses_around[0] <= com_address - 321;
+                        com_addresses_around[1] <= com_address - 320;
+                        com_addresses_around[2] <= 16'h12C01;
+                        com_addresses_around[3] <= com_address - 1;
+                        com_addresses_around[4] <= com_address;
+                        com_addresses_around[5] <= 16'h12C01;
+                        com_addresses_around[6] <= com_address + 319;
+                        com_addresses_around[7] <= com_address + 320;
+                        com_addresses_around[8] <= 16'h12C01;
+                    end
+                    else if (y_com_in == 0) begin
+                        com_addresses_around[0] <= 16'h12C01; // pixel outside frame
+                        com_addresses_around[1] <= 16'h12C01;
+                        com_addresses_around[2] <= 16'h12C01;
+                        com_addresses_around[3] <= com_address - 1;
+                        com_addresses_around[4] <= com_address;
+                        com_addresses_around[5] <= 16'h12C01;
+                        com_addresses_around[6] <= com_address + 319;
+                        com_addresses_around[7] <= com_address + 320;
+                        com_addresses_around[8] <= 16'h12C01;
+                    end
+                    else if (y_com_in == 239) begin
+                        com_addresses_around[0] <= com_address - 321;
+                        com_addresses_around[1] <= com_address - 320;
+                        com_addresses_around[2] <= 16'h12C01;
+                        com_addresses_around[3] <= com_address - 1;
+                        com_addresses_around[4] <= com_address;
+                        com_addresses_around[5] <= 16'h12C01;
+                        com_addresses_around[6] <= 16'h12C01;
+                        com_addresses_around[7] <= 16'h12C01;
+                        com_addresses_around[8] <= 16'h12C01;
+                    end
+                end else if (x_com_in == 0) begin // this means we are in the leftmost line
+                    if (y_com_in > 0 && y_com_in < 239) begin
+                        com_addresses_around[0] <= 16'h12C01;
+                        com_addresses_around[1] <= com_address - 320;
+                        com_addresses_around[2] <= com_address - 319;
+                        com_addresses_around[3] <= 16'h12C01;
+                        com_addresses_around[4] <= com_address;
+                        com_addresses_around[5] <= com_address + 1;
+                        com_addresses_around[6] <= 16'h12C01;
+                        com_addresses_around[7] <= com_address + 320;
+                        com_addresses_around[8] <= com_address + 321;
+                    end
+                    else if (y_com_in == 0) begin
+                        com_addresses_around[0] <= 16'h12C01; // pixel outside frame
+                        com_addresses_around[1] <= 16'h12C01;
+                        com_addresses_around[2] <= 16'h12C01;
+                        com_addresses_around[3] <= 16'h12C01;
+                        com_addresses_around[4] <= com_address;
+                        com_addresses_around[5] <= com_address + 1;
+                        com_addresses_around[6] <= 16'h12C01;
+                        com_addresses_around[7] <= com_address + 320;
+                        com_addresses_around[8] <= com_address + 321;
+                    end
+                    else if (y_com_in == 239) begin
+                        com_addresses_around[0] <= 16'h12C01;
+                        com_addresses_around[1] <= com_address - 320;
+                        com_addresses_around[2] <= com_address - 319;
+                        com_addresses_around[3] <= 16'h12C01;
+                        com_addresses_around[4] <= com_address;
+                        com_addresses_around[5] <= com_address + 1;
+                        com_addresses_around[6] <= 16'h12C01;
+                        com_addresses_around[7] <= 16'h12C01;
+                        com_addresses_around[8] <= 16'h12C01;
                     end
                 end
-                COM_RECEIVED: begin
-                    if (hcount == 0 && vcount == 0) begin
-                        state <= COMPARING;
-                    end
-                    if (com_received_flag) begin // find the 9 ixels around the COM
-                        com_received_flag <= 0;
-                        if (x_com_in > 0 && x_com_in < 319) begin
-                            if (y_com_in > 0 && y_com_in < 239) begin
-                                com_addresses_around[0] <= (y_com_in -1)*320 + (x_com_in -1);
-                                com_addresses_around[1] <= (y_com_in -1)*320 + (x_com_in);
-                                com_addresses_around[2] <= (y_com_in -1)*320 + (x_com_in +1);
-                                com_addresses_around[3] <= (y_com_in)*320 + (x_com_in -1);
-                                com_addresses_around[4] <= (y_com_in)*320 + (x_com_in);
-                                com_addresses_around[5] <= (y_com_in)*320 + (x_com_in +1);
-                                com_addresses_around[6] <= (y_com_in +1)*320 + (x_com_in -1);
-                                com_addresses_around[7] <= (y_com_in +1)*320 + (x_com_in);
-                                com_addresses_around[8] <= (y_com_in +1)*320 + (x_com_in +1);
-                            end
-                            else if (y_com_in == 0) begin
-                                com_addresses_around[0] <= 16'h12C01; // pixel outside frame
-                                com_addresses_around[1] <= 16'h12C01;
-                                com_addresses_around[2] <= 16'h12C01;
-                                com_addresses_around[3] <= (y_com_in)*320 + (x_com_in -1);
-                                com_addresses_around[4] <= (y_com_in)*320 + (x_com_in);
-                                com_addresses_around[5] <= (y_com_in)*320 + (x_com_in +1);
-                                com_addresses_around[6] <= (y_com_in +1)*320 + (x_com_in -1);
-                                com_addresses_around[7] <= (y_com_in +1)*320 + (x_com_in);
-                                com_addresses_around[8] <= (y_com_in +1)*320 + (x_com_in +1);
-                            end
-                            else if (y_com_in == 239) begin
-                                com_addresses_around[0] <= (y_com_in -1)*320 + (x_com_in -1);
-                                com_addresses_around[1] <= (y_com_in -1)*320 + (x_com_in);
-                                com_addresses_around[2] <= (y_com_in -1)*320 + (x_com_in +1);
-                                com_addresses_around[3] <= (y_com_in)*320 + (x_com_in -1);
-                                com_addresses_around[4] <= (y_com_in)*320 + (x_com_in);
-                                com_addresses_around[5] <= (y_com_in)*320 + (x_com_in +1);
-                                com_addresses_around[6] <= 16'h12C01;
-                                com_addresses_around[7] <= 16'h12C01;
-                                com_addresses_around[8] <= 16'h12C01;
-                            end
-                        end else if (x_com_in == 319) begin // this means we are in the rightmost line
-                            if (y_com_in > 0 && y_com_in < 239) begin
-                                com_addresses_around[0] <= (y_com_in -1)*320 + (x_com_in -1);
-                                com_addresses_around[1] <= (y_com_in -1)*320 + (x_com_in);
-                                com_addresses_around[2] <= 16'h12C01;
-                                com_addresses_around[3] <= (y_com_in)*320 + (x_com_in -1);
-                                com_addresses_around[4] <= (y_com_in)*320 + (x_com_in);
-                                com_addresses_around[5] <= 16'h12C01;
-                                com_addresses_around[6] <= (y_com_in +1)*320 + (x_com_in -1);
-                                com_addresses_around[7] <= (y_com_in +1)*320 + (x_com_in);
-                                com_addresses_around[8] <= 16'h12C01;
-                            end
-                            else if (y_com_in == 0) begin
-                                com_addresses_around[0] <= 16'h12C01; // pixel outside frame
-                                com_addresses_around[1] <= 16'h12C01;
-                                com_addresses_around[2] <= 16'h12C01;
-                                com_addresses_around[3] <= (y_com_in)*320 + (x_com_in -1);
-                                com_addresses_around[4] <= (y_com_in)*320 + (x_com_in);
-                                com_addresses_around[5] <= 16'h12C01;
-                                com_addresses_around[6] <= (y_com_in +1)*320 + (x_com_in -1);
-                                com_addresses_around[7] <= (y_com_in +1)*320 + (x_com_in);
-                                com_addresses_around[8] <= 16'h12C01;
-                            end
-                            else if (y_com_in == 239) begin
-                                com_addresses_around[0] <= (y_com_in -1)*320 + (x_com_in -1);
-                                com_addresses_around[1] <= (y_com_in -1)*320 + (x_com_in);
-                                com_addresses_around[2] <= 16'h12C01;
-                                com_addresses_around[3] <= (y_com_in)*320 + (x_com_in -1);
-                                com_addresses_around[4] <= (y_com_in)*320 + (x_com_in);
-                                com_addresses_around[5] <= 16'h12C01;
-                                com_addresses_around[6] <= 16'h12C01;
-                                com_addresses_around[7] <= 16'h12C01;
-                                com_addresses_around[8] <= 16'h12C01;
-                            end
-                        end else if (x_com_in == 0) begin // this means we are in the leftmost line
-                            if (y_com_in > 0 && y_com_in < 239) begin
-                                com_addresses_around[0] <= 16'h12C01;
-                                com_addresses_around[1] <= (y_com_in -1)*320 + (x_com_in);
-                                com_addresses_around[2] <= (y_com_in -1)*320 + (x_com_in +1);
-                                com_addresses_around[3] <= 16'h12C01;
-                                com_addresses_around[4] <= (y_com_in)*320 + (x_com_in);
-                                com_addresses_around[5] <= (y_com_in)*320 + (x_com_in +1);
-                                com_addresses_around[6] <= 16'h12C01;
-                                com_addresses_around[7] <= (y_com_in +1)*320 + (x_com_in);
-                                com_addresses_around[8] <= (y_com_in +1)*320 + (x_com_in +1);
-                            end
-                            else if (y_com_in == 0) begin
-                                com_addresses_around[0] <= 16'h12C01; // pixel outside frame
-                                com_addresses_around[1] <= 16'h12C01;
-                                com_addresses_around[2] <= 16'h12C01;
-                                com_addresses_around[3] <= 16'h12C01;
-                                com_addresses_around[4] <= (y_com_in)*320 + (x_com_in);
-                                com_addresses_around[5] <= (y_com_in)*320 + (x_com_in +1);
-                                com_addresses_around[6] <= 16'h12C01;
-                                com_addresses_around[7] <= (y_com_in +1)*320 + (x_com_in);
-                                com_addresses_around[8] <= (y_com_in +1)*320 + (x_com_in +1);
-                            end
-                            else if (y_com_in == 239) begin
-                                com_addresses_around[0] <= 16'h12C01;
-                                com_addresses_around[1] <= (y_com_in -1)*320 + (x_com_in);
-                                com_addresses_around[2] <= (y_com_in -1)*320 + (x_com_in +1);
-                                com_addresses_around[3] <= 16'h12C01;
-                                com_addresses_around[4] <= (y_com_in)*320 + (x_com_in);
-                                com_addresses_around[5] <= (y_com_in)*320 + (x_com_in +1);
-                                com_addresses_around[6] <= 16'h12C01;
-                                com_addresses_around[7] <= 16'h12C01;
-                                com_addresses_around[8] <= 16'h12C01;
-                            end
-                        end
-                    end
+            end
+            case(inner_state) 
+                CALCULATE: begin
+                    inner_state <= CHECK;
+                    // calculate address
+                    pixel_addr_forbram <= (hcount)*320 + vcount;
+                    pixel_yvalue <= {2'b00, y_pixel}; // save the pixel throughout a full loop
+                    // read pixel for VGA -- this will happen in top level and be synced to this FSM
+                    pixelread_forvga_valid <= 0;
                 end
-                COMPARING: begin
-                    if (com_valid_in) begin // new COM received, need to calculate with the new one instead
-                        state <= COM_RECEIVED;
-                        com_received_flag <= 1;
-                        x_com_current <= x_com_in;
-                        y_com_current <= y_com_in;
-                        com_address <= (y_com_in)*320 + x_com_in;
-                    end
-                    // PIPELINE
-                    address_buffer[1] <= address_buffer[0];
-                    address_buffer[2] <= address_buffer[1];
-                    address_buffer[3] <= address_buffer[2];
-
-                    // CALCULATE
-                    address_buffer[0] <= (hcount)*320 + vcount;
-
-                    // CHECK PIXEL - request current pixel from BRAM and check with COM
-                    // assign pixel_addr_bram_check = address_buffer[0]; this is declared above to send the pixel to the bram
-                    pixel_buffer[2] <= pixel_buffer[1];
-                    if (address_buffer[1] == com_addresses_around[0] || address_buffer[1] == com_addresses_around[1] || address_buffer[1] == com_addresses_around[2] || address_buffer[1] == com_addresses_around[3] || address_buffer[1] == com_addresses_around[4] || address_buffer[1] == com_addresses_around[5] || address_buffer[1] == com_addresses_around[6] || address_buffer[1] == com_addresses_around[7] || address_buffer[1] == com_addresses_around[8]) begin
+                CHECK: begin
+                    inner_state <= CALCULATE;
+                    if (pixel_addr_forbram == com_addresses_around[0] || pixel_addr_forbram == com_addresses_around[1] || pixel_addr_forbram == com_addresses_around[2] || pixel_addr_forbram == com_addresses_around[3] || pixel_addr_forbram == com_addresses_around[4] || pixel_addr_forbram == com_addresses_around[5] || pixel_addr_forbram == com_addresses_around[6] || pixel_addr_forbram == com_addresses_around[7] || pixel_addr_forbram == com_addresses_around[8]) begin
                         address_in_com_flag <= 1;
                     end else begin
                         address_in_com_flag <= 0;
                     end
-
-                    // RECEIVE pixel_from_bram
+                end
+                WAIT1: begin
+                    inner_state <= RECEIVE;
+                end
+                RECEIVE: begin
+                    inner_state <= STORE;
                     if (write_erase_select == 0) begin // write mode
                         if (pixel_from_bram[7:6] == 2'b11) begin // colored pixel - don't write over it!
                             valid_pixel_forbram <= 0; 
-                            pixel_buffer[3] <= pixel_buffer[2];
+                            pixel_for_bram <= pixel_from_bram;
                         end
                         else begin
                             valid_pixel_forbram <= 1;
                             if (address_in_com_flag) begin // write colored pixel
                                 case (color_select)
                                     2'b00: begin
-                                        pixel_buffer[3] <= YELLOW;
+                                        pixel_for_bram <= YELLOW;
                                     end
                                     2'b01: begin
-                                        pixel_buffer[3] <= PINK;
+                                        pixel_for_bram <= PINK;
                                     end
                                     2'b10: begin
-                                        pixel_buffer[3] <= GREEN;
+                                        pixel_for_bram <= GREEN;
                                     end
                                     2'b11: begin
-                                        pixel_buffer[3] <= RED;
+                                        pixel_for_bram <= RED;
                                     end
                                 endcase
                             end
                             else begin // write regular pixel
-                                pixel_buffer[3] <= pixel_buffer[2];
+                                pixel_for_bram <= pixel_yvalue;
                             end
                         end
-                        pixel_buffer[3] <= pixel_buffer[2];
                     end else begin // erase mode
                         if (pixel_from_bram[7:6] == 2'b11) begin // colored pixel, either erase it or leave it
                             if (address_in_com_flag) begin // erase it
                                 valid_pixel_forbram <= 1;
-                                pixel_buffer[3] <= pixel_buffer[2];
+                                pixel_for_bram <= pixel_yvalue;
                             end
                             else begin // leave it
                                 valid_pixel_forbram <= 0;
-                                pixel_buffer[3] <= pixel_buffer[2];
+                                pixel_for_bram <= pixel_from_bram;
                             end
                         end
-                        else begin
+                        else begin // write regular pixel
                             valid_pixel_forbram <= 1;
-                            pixel_buffer[3] <= pixel_buffer[2];
+                            pixel_for_bram <= pixel_yvalue;
                         end
                     end
-
-                    // STORE these assignments were made above, stores from the last spot in the buffers with the valid value set before!
-                    // assign pixel_out_forbram = pixel_buffer[3];
-                    // assign pixel_addr_forbram = address_buffer[3];
-
                 end
-            endcase          
+                STORE: begin
+                    // pixel for BRAM is written in this state
+                    inner_state <= WAIT2;
+                end
+                WAIT2: begin
+                    inner_state <= VGAREAD;
+                    pixeladdr_forvga_valid <= 1;
+                end
+                VGAREAD: begin
+                    inner_state <= WAIT3;
+                    pixeladdr_forvga_valid <= 0;
+                end
+                WAIT3: begin
+                    inner_state <= CALCULATE;
+                    pixelread_forvga_valid <= 1; // tells vga module to read the pixel for the VGA
+                end
+            endcase        
         end
-        
-        
     end
 
 endmodule

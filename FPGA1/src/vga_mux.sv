@@ -17,8 +17,7 @@ module vga_mux (
         endcase
       end
       default: begin
-        // TODO: change this so that it properly displays the greyscale pixel
-        pixel_out = {scaled_pixel_in[5:4], scaled_pixel_in[5:4], scaled_pixel_in[3:2], scaled_pixel_in[3:2], scaled_pixel_in[1:0], scaled_pixel_in[1:0]};
+        pixel_out = {scaled_pixel_in[5:2], scaled_pixel_in[5:2], scaled_pixel_in[5:2]}; // want same values in RGB fields 
       end
     endcase
   end
