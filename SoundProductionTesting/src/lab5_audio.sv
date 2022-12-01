@@ -55,7 +55,7 @@ module top_level(   input clk_100mhz,
                                                                                             
     volume_control vc (.vol_in(sw[15:13]),
                        .signal_in(recorder_data), .signal_out(vol_out));
-    pwm (.clk_in(clk_100mhz), .rst_in(btnd), .level_in({~vol_out[7],vol_out[6:0]}), .pwm_out(pwm_val));
+    pwm pwn (.clk_in(clk_100mhz), .rst_in(btnd), .level_in({~vol_out[7],vol_out[6:0]}), .pwm_out(pwm_val));
     assign aud_pwm = pwm_val?1'bZ:1'b0; 
     
 endmodule
@@ -150,8 +150,9 @@ module recorder(
                   end else if (eightCounter < 8) begin
                     eightCounter <= eightCounter + 1;
                 end
-              end else if (addr => lastSample -1) begin
+              end else if (addr >= lastSample -1) begin
                 addr <= 0;
+                eightCounter <= 0;
               end
               data_out <= data_from_bram;
             end
@@ -182,15 +183,34 @@ module fir31(
   input signed [7:0] x_in,
   output logic signed [17:0] y_out
 );
+
+  logic [4:0] index_in;
+  logic signed [9:0] coeff_out;
+  coeffs31 coeffs (.index_in(index_in),.coeff_out(coeff_out));
+
+  logic [7:0] sample [31:0];  // 32 element array each 8 bits wide
+  logic [4:0] offset; //pointer for the array! (5 bits because 32 elements in above array! Do not make larger)
+  logic [4:0] index; //for accumulator
   // for now just pass data through
   always_ff @(posedge clk_in) begin
-    if (ready_in) y_out <= {x_in,10'd0};
+    // if (ready_in) y_out <= {x_in,10'd0};
+    if (rst_in) begin
+      offset <= 0;
+    end else begin
+      if (ready_in) begin
+        offset <= offset + 1; //allow this to overflow and wrap
+        sample[offset] <= x_in;
+        y_out <= 0;
+        index <= 0;
+      end else begin
+        if (index < 32) begin
+          index <= index + 1;
+          y_out <= y_out + ($signed(coeff_out) * $signed(sample[offset - index]));
+        end
+      end
+    end
   end
 endmodule
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //
