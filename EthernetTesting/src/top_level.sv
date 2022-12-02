@@ -35,19 +35,21 @@ module top_level(
   //to be back on the 65MHz system clock, delayed by a clock cycle.
 
   //Ethernet module 
+  logic old_txen;
   logic flip;
   logic [24:0] counter;
   logic [7:0] pixel;
 
   always_ff @(posedge eth_refclk) begin
-    if (counter < 8000000) begin
-      counter <= counter + 1;
+    if (sys_rst) begin
+      pixel <= 8'b11111111;
+      old_txen <= 0;
     end else begin
-      flip <= !flip;
-      counter <= 0;
+      if (old_txen == 1 && eth_txen == 0) begin
+        flip <= 1;
+      end 
+      old_txen <= eth_txen;
     end
-    if (flip) pixel <= 8'b11111111;
-    else pixel <= 8'b0;
   end
 
   logic stall;
@@ -66,8 +68,8 @@ module top_level(
     .pixel_addr(rbo_pixel_addr) //TODO: fill this in
   );
 
-  // logic stall1; //placeholder, delete
   eth_packer packer(
+    .cancelled(flip),
     .clk(eth_refclk),
     .rst(sys_rst),
     .axiiv(rbo_axiov), //TODO: fill this in
@@ -82,7 +84,7 @@ module top_level(
     aggregate aggregate (
     .clk(eth_refclk),
     .rst(sys_rst),
-    .axiiv(eth_txd),
+    .axiiv(eth_txen),
     .axiid(eth_txd),
     .axiov(aggregate_axiov),
     .axiod(aggregate_axiod)

@@ -40,7 +40,7 @@ always_comb begin
                     end else begin
                         axiod = 0;
                     end 
-                    // axiod = 1;
+                    // axiod = 2'b11;
                 end else axiod = 0;
             end
 

@@ -2,6 +2,7 @@
 `timescale 1ns / 1ps
 
 module eth_packer (
+    input wire cancelled,
     input wire clk,
     input wire rst,
     input wire axiiv,
@@ -17,7 +18,7 @@ parameter SOURCE_ADDR = 48'h69695A065491; //note: flip to MSB/ LSb order if usin
 
 parameter PREAMBLE_DIBITS = 28 - 1; // 7 * 4
 parameter ADDR_DIBITS = 24 - 1; 
-parameter MIN_DATA_DIBITS = 20 - 1; //(320 * 4) - 1;
+parameter MIN_DATA_DIBITS = (320*4) - 1; //(320 * 4) - 1;
 parameter CRC_DIBITS = 16 - 1;
 parameter IFG_PERIOD = 48 -1; // Interpacket-Gap: standard minimum is time to send 96 bits (43 cycles)
 parameter LEN_DIBITS = 8 - 1;
@@ -62,7 +63,7 @@ crc32 crc32 (
 // };
 
 always_comb begin
-    if (state > 1 && state < 6) begin
+    if (state > 2 && state < 7) begin
         cksum_axiiv = 1;
     end else begin
         cksum_axiiv = 0;
@@ -102,8 +103,15 @@ always_comb begin
         end
         SendLength: begin
             phy_txen = 1'b1;
-            phy_txd = 2'b01; //note: FPGA2 doesn't care about length either right now, we could potentially use it to error check for drops
-            stall = 1;
+            // phy_txd = 2'b01; //note: FPGA2 doesn't care about length either right now, we could potentially use it to error check for drops
+            if (dibit_counter == 7) phy_txd = 2'b01;
+            else if (dibit_counter == 3 || dibit_counter == 4 || dibit_counter == 6) phy_txd = 2'b11;
+            else if (dibit_counter == 0 || dibit_counter == 1 || dibit_counter == 2) phy_txd = 2'b10;
+            else phy_txd = 2'b0;
+
+            if (dibit_counter > 6) stall = 0;
+            else stall = 1;
+            // 1010_1011_1100_1101 ABCD
         end
         SendData: begin
             phy_txen = 1'b1;
@@ -136,7 +144,9 @@ always_ff @(posedge clk) begin
         crc32rst <= 1;
         dibit_counter <= 0;
     end else begin
-        case(state)
+        if (cancelled) state <= Idle;
+        else begin 
+            case(state)
             Idle: begin //
                 byte_bit_counter <= 4'b0;
                 audio_counter <= 9'b0;
@@ -225,6 +235,7 @@ always_ff @(posedge clk) begin
                 end
             end
         endcase
+        end
     end
 end
 
