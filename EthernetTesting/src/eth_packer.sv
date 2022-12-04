@@ -16,9 +16,9 @@ module eth_packer (
 parameter DEST_ADDR_DIBIT = 2'b11; 
 parameter SOURCE_ADDR = 48'h69695A065491; //note: flip to MSB/ LSb order if using
 
-parameter PREAMBLE_DIBITS = 28 - 1; // 7 * 4
+parameter PREAMBLE_DIBITS = 32; // 7 * 4
 parameter ADDR_DIBITS = 24 - 1; 
-parameter MIN_DATA_DIBITS = (320*4) - 1; //(320 * 4) - 1;
+parameter MIN_DATA_DIBITS = (320 * 4) - 1; //(320 * 4) - 1;
 parameter CRC_DIBITS = 16 - 1;
 parameter IFG_PERIOD = 48 -1; // Interpacket-Gap: standard minimum is time to send 96 bits (43 cycles)
 parameter LEN_DIBITS = 8 - 1;
@@ -83,14 +83,14 @@ always_comb begin
             else phy_txd = 2'b11;
             stall = 1;
         end
-        SendSFD: begin
-            phy_txen = 1'b1;
-            if (dibit_counter == 0) phy_txd = 2'b01;
-            else if (dibit_counter == 1) phy_txd = 2'b11;
-            else if (dibit_counter == 2 || dibit_counter == 3) phy_txd = 2'b01;
-            else phy_txd = 0;
-            stall = 1;
-        end
+        // SendSFD: begin
+        //     phy_txen = 1'b1;
+        //     if (dibit_counter == 0) phy_txd = 2'b01;
+        //     else if (dibit_counter == 1) phy_txd = 2'b11;
+        //     else if (dibit_counter == 2 || dibit_counter == 3) phy_txd = 2'b01;
+        //     else phy_txd = 0;
+        //     stall = 1;
+        // end
         SendDestAddr: begin
             phy_txen = 1'b1;
             phy_txd = 2'b11; //broadcast all
@@ -120,10 +120,10 @@ always_comb begin
         end
         SendTail: begin
             phy_txen = 1'b1;
-            if (dibit_counter <= 3) phy_txd = {cksum[25 + byte_bit_counter], cksum[24 + byte_bit_counter]};
-            else if (dibit_counter <= 7) phy_txd = {cksum[17 + byte_bit_counter], cksum[16 + byte_bit_counter]};
-            else if (dibit_counter <= 11) phy_txd = {cksum[9 + byte_bit_counter], cksum[8 + byte_bit_counter]};
-            else if (dibit_counter <= 15) phy_txd = {cksum[1 + byte_bit_counter], cksum[byte_bit_counter]};
+            if (dibit_counter <= 3) phy_txd = {cksum[31 - byte_bit_counter], cksum[30 - byte_bit_counter]};
+            else if (dibit_counter <= 7) phy_txd = {cksum[23 - byte_bit_counter], cksum[22 - byte_bit_counter]};
+            else if (dibit_counter <= 11) phy_txd = {cksum[15 - byte_bit_counter], cksum[14 - byte_bit_counter]};
+            else if (dibit_counter <= 15) phy_txd = {cksum[7 - byte_bit_counter], cksum[6 - byte_bit_counter]};
             else phy_txd = {cksum[1 + byte_bit_counter], cksum[byte_bit_counter]}; //to get rid of latch
             stall = 1;
         end
@@ -166,20 +166,20 @@ always_ff @(posedge clk) begin
                 end
                 else if (dibit_counter == PREAMBLE_DIBITS) begin
                     dibit_counter <= 0;
-                    state <= SendSFD;
+                    state <= SendDestAddr;
                     $display("Sending SFD Now");
                 end
             end
-            SendSFD: begin
-                if (dibit_counter < 3) begin
-                    dibit_counter <= dibit_counter + 1;
-                end
-                else if (dibit_counter == 3) begin
-                    dibit_counter <= 0;
-                    state <= SendDestAddr;
-                    $display("Sending Dest Now");
-                end
-            end
+            // SendSFD: begin
+            //     if (dibit_counter < 3) begin
+            //         dibit_counter <= dibit_counter + 1;
+            //     end
+            //     else if (dibit_counter == 3) begin
+            //         dibit_counter <= 0;
+            //         state <= SendDestAddr;
+            //         $display("Sending Dest Now");
+            //     end
+            // end
             SendDestAddr: begin
                 crc32rst <= 0;
                 if (dibit_counter < ADDR_DIBITS) begin
