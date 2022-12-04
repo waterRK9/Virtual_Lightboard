@@ -120,11 +120,11 @@ always_comb begin
         end
         SendTail: begin
             phy_txen = 1'b1;
-            if (dibit_counter <= 3) phy_txd = {cksum[31 - byte_bit_counter], cksum[30 - byte_bit_counter]};
-            else if (dibit_counter <= 7) phy_txd = {cksum[23 - byte_bit_counter], cksum[22 - byte_bit_counter]};
-            else if (dibit_counter <= 11) phy_txd = {cksum[15 - byte_bit_counter], cksum[14 - byte_bit_counter]};
-            else if (dibit_counter <= 15) phy_txd = {cksum[7 - byte_bit_counter], cksum[6 - byte_bit_counter]};
-            else phy_txd = {cksum[1 + byte_bit_counter], cksum[byte_bit_counter]}; //to get rid of latch
+            if (dibit_counter <= 3) phy_txd = {cksum[30 - byte_bit_counter], cksum[31 - byte_bit_counter]};
+            else if (dibit_counter <= 7) phy_txd = {cksum[22 - byte_bit_counter], cksum[23 - byte_bit_counter]};
+            else if (dibit_counter <= 11) phy_txd = {cksum[14 - byte_bit_counter], cksum[15 - byte_bit_counter]};
+            else if (dibit_counter <= 15) phy_txd = {cksum[6 - byte_bit_counter], cksum[7 - byte_bit_counter]};
+            else phy_txd = {cksum[byte_bit_counter], cksum[1 + byte_bit_counter]}; //to get rid of latch
             stall = 1;
         end
         default: begin
