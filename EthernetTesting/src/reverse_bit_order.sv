@@ -29,16 +29,19 @@ always_comb begin
     end else begin
         case (state)
             SendAddress: begin
-                // counts through addr length and outputs bits of addr one at a time in MSB, LSb order
-                if (addr_bit_counter < 4) begin //0, 2, 4, 6
-                    axiod = {pixel_addr[17 + byte_bit_counter], pixel_addr[16 + byte_bit_counter]};
-                end else if (addr_bit_counter < 8) begin //8, 10, 12, 14
-                    axiod = {pixel_addr[9 + byte_bit_counter], pixel_addr[8 + byte_bit_counter]};
-                end else if (addr_bit_counter < 12) begin // 16, 18, 20, 22
-                    axiod = {pixel_addr[1 + byte_bit_counter], pixel_addr[byte_bit_counter]};
-                end else begin
-                    axiod = 0;
-                end
+                if (byte_bit_counter < 8) begin
+                    // counts through addr length and outputs bits of addr one at a time in MSB, LSb order
+                    if (addr_bit_counter < 4) begin //0, 2, 4, 6
+                        axiod = {pixel_addr[17 + byte_bit_counter], pixel_addr[16 + byte_bit_counter]};
+                    end else if (addr_bit_counter < 8) begin //8, 10, 12, 14
+                        axiod = {pixel_addr[9 + byte_bit_counter], pixel_addr[8 + byte_bit_counter]};
+                    end else if (addr_bit_counter < 12) begin // 16, 18, 20, 22
+                        axiod = {pixel_addr[1 + byte_bit_counter], pixel_addr[byte_bit_counter]};
+                    end else begin
+                        axiod = 0;
+                    end 
+                    // axiod = 2'b11;
+                end else axiod = 0;
             end
 
             SendPixel: begin

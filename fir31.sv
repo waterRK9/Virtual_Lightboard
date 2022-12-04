@@ -38,14 +38,15 @@ module fir31(
       accumulator <= 0;
     end else begin
       if (ready_in) begin
-        offset <= offset + 1; //allow this to overflow and wrap
         sample[offset] <= x_in;
+        offset <= offset + 1; //allow this to overflow and wrap
         y_out <= y_out;
         index <= 0;
+        sample_num <= offset-index;
       end else begin
         index <= (index == 30)? index: index + 1;
         sample_num <= offset-index;
-        probe <= sample[sample_num];
+        probe <= ($signed(coeff_out) * $signed(sample[sample_num]));
         accumulator <= (index == 30)? accumulator: accumulator + ($signed(coeff_out) * $signed(sample[sample_num]));
         y_out <= (index == 30)? accumulator: y_out;
       end
