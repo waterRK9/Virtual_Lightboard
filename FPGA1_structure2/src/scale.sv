@@ -20,7 +20,7 @@ module scale(
       end
     end
     else if (scale_in == 2'b01) begin
-      if (hcount_in < 1024 && vcount_in < 768) begin //CHANGED THIS!!
+      if (hcount_in < 480 && vcount_in < 640) begin
         cam_out = frame_buff_in;
       end
       else begin

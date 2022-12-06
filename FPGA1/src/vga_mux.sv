@@ -14,6 +14,7 @@ module vga_mux (
           6'b111111: pixel_out = 12'hA26; // magenta color
           6'b101010: pixel_out = 12'hFF0; // yellow color
           6'b000000: pixel_out = 12'h00F; // blue color
+          default: pixel_out = 12'hFFF; // default white - this shouldn't happen
         endcase
       end
       default: begin

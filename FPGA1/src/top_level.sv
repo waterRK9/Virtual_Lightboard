@@ -11,46 +11,14 @@ module top_level(
   output logic jbclk,  //signal we provide to camera
   output logic jblock, //signal for resetting camera
 
-  output logic [15:0] led, //just here for the funs
-
   output logic [3:0] vga_r, vga_g, vga_b,
-  output logic vga_hs, vga_vs,
-  output logic [7:0] an,
-  output logic caa,cab,cac,cad,cae,caf,cag
+  output logic vga_hs, vga_vs
 
   );
 
   //system reset switch linking
   logic sys_rst; //global system reset
   assign sys_rst = btnc; //just done to make sys_rst more obvious
-  assign led = sw; //switches drive LED (change if you want)
-
-  //pipelining vars
-  logic [10:0] hcount_pipe [7:0];
-  logic [9:0] vcount_pipe [7:0];
-  logic blank_pipe [7:0];
-  logic hsync_pipe [7:0];
-  logic vsync_pipe [7:0];
-  logic [15:0] pixel_data_filtered_pipe; 
-  logic [11:0] mux_pixel_pipe;
-
-  //Pipelining
-  always_ff @(posedge clk_65mhz)begin
-    hcount_pipe[0] <= hcount;
-    vcount_pipe[0] <= vcount;
-    blank_pipe[0] <= blank;
-    hsync_pipe[0] <= hsync;
-    vsync_pipe[0] <= vsync;
-    mux_pixel_pipe <= mux_pixel;
-    pixel_data_filtered_pipe <= pixel_data_filtered;
-    for (int i=1; i<8; i = i+1)begin
-      hcount_pipe[i] <= hcount_pipe[i-1];
-      vcount_pipe[i] <= vcount_pipe[i-1];
-      blank_pipe[i] <= blank_pipe[i-1];
-      hsync_pipe[i] <= hsync_pipe[i-1];
-      vsync_pipe[i] <= vsync_pipe[i-1];
-    end
-  end
 
   //FINAL PROJECT VARS
   //Clock modules output
@@ -93,14 +61,20 @@ module top_level(
   //using x_com_calc and y_com_calc values
 
   //Compare module output
-  logic [16:0] pixel_addr_portb;
-  logic [7:0] pixel_in_porta;
+  logic [7:0] pixel_in_porta_compare;
+  logic [7:0] pixel_out_porta_compare;
+  logic [16:0] pixel_addr_porta_compare;
+  logic pixel_valid_porta_compare;
+
+  //BRAM module input/output
+  logic [15:0] pixel_in_porta; //CHANGED FOR NOW
   logic [16:0] pixel_addr_porta;
   logic pixel_valid_porta;
-
-  //BRAM module output
-  logic [8:0] pixel_out_porta;
-  logic [8:0] pixel_out_portb;
+  logic [16:0] pixel_addr_portb;
+  logic [15:0] pixel_out_porta;
+  logic [7:0] pixel_out_portb;
+  logic vgareadpixel;
+  logic vgasndaddr;
 
   //VGA GEN module output
   logic [10:0] hcount;    // pixel on current line
@@ -110,21 +84,72 @@ module top_level(
 
   //Scale module output
   logic [7:0] scaled_pixel_to_display;//mirrored and scaled 565 pixel
+  logic [15:0] pixel_out_vga;
+
+  //Mirror module
+  logic [16:0] pixel_addr_vga;
 
   //VGA mux module output
-  logic [7:0] mux_pixel;
+  logic [11:0] mux_pixel;
+
+  
+
+  //PIPELINING:
+  //pipelining vars
+  logic [10:0] hcount_pipe [7:0];
+  logic [9:0] vcount_pipe [7:0];
+  logic blank_pipe [7:0];
+  logic hsync_pipe [7:0];
+  logic vsync_pipe [7:0];
+  logic [15:0] pixel_data_rec_pipe [3:0]; 
+  logic [11:0] mux_pixel_pipe;
+  logic [10:0] hcount_rec_pipe [3:0];
+  logic [9:0] vcount_rec_pipe [3:0];
+  logic data_valid_rec_pipe [3:0];
+
+  //Pipelining
+  always_ff @(posedge clk_65mhz)begin
+    hcount_pipe[0] <= hcount;
+    vcount_pipe[0] <= vcount;
+    blank_pipe[0] <= blank;
+    hsync_pipe[0] <= hsync;
+    vsync_pipe[0] <= vsync;
+    mux_pixel_pipe <= mux_pixel;
+    pixel_data_rec_pipe[0] <= pixel_data_rec;
+    hcount_rec_pipe[0] <= hcount_rec;
+    vcount_rec_pipe[0] <= vcount_rec;
+    data_valid_rec_pipe[0] <= data_valid_rec;
+    for (int i=1; i<8; i = i+1)begin
+      hcount_pipe[i] <= hcount_pipe[i-1];
+      vcount_pipe[i] <= vcount_pipe[i-1];
+      blank_pipe[i] <= blank_pipe[i-1];
+      hsync_pipe[i] <= hsync_pipe[i-1];
+      vsync_pipe[i] <= vsync_pipe[i-1];
+    end
+    for (int j = 1; j<4; j=j+1)begin
+      hcount_rec_pipe[j] <= hcount_rec_pipe[j-1];
+      vcount_rec_pipe[j] <= vcount_rec_pipe[j-1];
+      pixel_data_rec_pipe[j] <= pixel_data_rec_pipe[j-1];
+      data_valid_rec_pipe[j] <= data_valid_rec_pipe[j-1];
+    end
+  end
 
   //FINAL PROJECT MODULES
   //CLOCKS: 
   //Generate 65 MHz
-  clk_wiz_65mhz clk_65mhz_gen(
-    .clk_in1(clk_100mhz),
-    .clk_out1(clk_65mhz)
-  );
-  //Generate Ethernet Clock
-  ethernet_clk_wiz clk_50mhz_gen(
-    .clk(clk_100mhz),
-    .ethclk(clk_50mhz)
+  // clk_wiz_lab3 clk_65mhz_gen(
+  //   .clk_in1(clk_100mhz),
+  //   .clk_out1(clk_65mhz)
+  // );
+  // //Generate Ethernet Clock
+  // ethernet_clk_wiz clk_50mhz_gen(
+  //   .clk(clk_100mhz),
+  //   .ethclk(clk_50mhz)
+  // );
+  clk_wiz_0_clk_wiz clk_gen(
+    .clk_100mhz(clk_100mhz),
+    .eth_clk(clk_50mhz),
+    .vga_clk(clk_65mhz)
   );
   //Clock domain crossing to synchronize the camera's clock
   //to be back on the 65MHz system clock, delayed by a clock cycle.
@@ -186,14 +211,18 @@ module top_level(
   );
 
   //PIXEL SPLITTING MUX:
+  //included into rgb_to_ycrcb directly
+  //0 cycle latency
+  
+  //RGB_TO_YCRCB: 
   //Convert RGB of filtered pixel data to YCrCb
   //See lecture 04 for YCrCb discussion.
   //Module has a 3 cycle latency
   rgb_to_ycrcb rgbtoycrcb_m(
     .clk_in(clk_65mhz),
-    .r_in({pixel_data_filtered[15:11], 5'b0}), //all five of red
-    .g_in({pixel_data_filtered[10:5],4'b0}), //all six of green
-    .b_in({pixel_data_filtered[4:0], 5'b0}), //all five of blue
+    .r_in({pixel_data_rec[15:11], 5'b0}), //all five of red
+    .g_in({pixel_data_rec[10:5],4'b0}), //all six of green
+    .b_in({pixel_data_rec[4:0], 5'b0}), //all five of blue
     .y_out(y),
     .cr_out(cr),
     .cb_out(cb)
@@ -203,10 +232,11 @@ module top_level(
   //Thresholder: Takes in the full RGB and YCrCb information and
   //based on upper and lower bounds masks
   //module has 0 cycle latency
-  threshold(.sel_in(sw[5:3]), //will leave this functionality for now, don't actually need it...
-     .r_in(pixel_data_filtered_pipe[15:12]), 
-     .g_in(pixel_data_filtered_pipe[10:7]), 
-     .b_in(pixel_data_filtered_pipe[4:1]), 
+  threshold(
+     .sel_in(sw[5:3]), //will leave this functionality for now, don't actually need it...
+     .r_in(pixel_data_rec_pipe[2][15:12]), 
+     .g_in(pixel_data_rec_pipe[2][10:7]), 
+     .b_in(pixel_data_rec_pipe[2][4:1]), 
      .y_in(y[9:6]),
      .cr_in(cr[9:6]),
      .cb_in(cb[9:6]),
@@ -217,16 +247,19 @@ module top_level(
   );
 
   //CENTER OF MASS:
+  //module has variable cycle latency from when tabulate is asserted to valid output
+  //divider (which is called from within) also has high latency
+  //module must receive a full frame of pixels
   center_of_mass com_m(
     .clk_in(clk_65mhz),
     .rst_in(sys_rst),
-    .x_in(hcount_pipe[6]),  //TODO: needs to use pipelined signal! (PS3)
-    .y_in(vcount_pipe[6]), //TODO: needs to use pipelined signal! (PS3)
+    .x_in(hcount_rec_pipe[2]),  //PIPELINE
+    .y_in(vcount_rec_pipe[2]), //PIPELINE
     .valid_in(mask),
-    .tabulate_in((hcount==0 && vcount==0)),
-    .x_out(x_com_calc),
-    .y_out(y_com_calc),
-    .valid_out(new_com)
+    .tabulate_in((hcount_rec==0 && vcount_rec==0)), //PIPELINE
+    .x_com(x_com_calc),
+    .y_com(y_com_calc),
+    .valid_com(new_com)
   );
 
   //COMPARE: 
@@ -236,14 +269,13 @@ module top_level(
     .x_com_in(x_com_calc),
     .y_com_in(y_com_calc),
     .com_valid_in(new_com),
-    .hcount(hcount_pipe[]), // TODO: finish pipelining
-    .vcount(vcount_pipe[]), // TODO: finish pipelining
-    .y_pixel(y), // TODO: finish pipelining
+    .hcount(hcount_rec_pipe[2]), //PIPELINE: 3 cycle latency
+    .vcount(vcount_rec_pipe[2]), //PIPELINE: 3 cycle latency
+    .y_pixel(y[9:4]), //PIPELINE: from rgb_to_ycrcb
     .color_select(sw[2:1]),
     .write_erase_select(sw[0]),
-    .pixel_from_bram(pixel_out_porta_compare), // current pixel from BRAM (PORT B)
+    .pixel_from_bram(pixel_out_porta_compare), // current pixel from BRAM for comparison
     .pixel_for_bram(pixel_in_porta_compare),
-    .pixel_out_forbram(pixel_in_porta_compare),
     .pixel_addr_forbram(pixel_addr_porta_compare),
     .valid_pixel_forbram(pixel_valid_porta_compare),
     .pixelread_forvga_valid(vgareadpixel),
@@ -251,43 +283,81 @@ module top_level(
   );
 
   //BRAM MANAGER: combinational logic to handle what is wired to BRAM
-  always_comb begin
-    if (vgasndaddr == 1 || vgareadpixel == 1) begin
-      pixel_addr_porta = pixel_addr_vga; // TODO: use this pixel in vga
-      pixel_valid_porta = 0;
-      pixel_in_porta = 8'b0;
-      pixel_out_porta = pixel_out_vga; // TODO: use this pixel in vga
-    end
-    else begin
-      pixel_addr_porta = pixel_addr_porta_compare;
-      pixel_valid_porta = pixel_valid_porta_compare;
-      pixel_in_porta = pixel_in_porta_compare;
-      pixel_out_porta = pixel_out_porta_compare;
-    end
-  end
+  // always_comb begin
+  //   if (vgasndaddr == 1 || vgareadpixel == 1) begin
+  //     pixel_addr_porta = pixel_addr_vga; // TODO: use this pixel in vga
+  //     pixel_valid_porta = 0;
+  //     pixel_in_porta = 8'b0;
+  //     pixel_out_vga = pixel_out_porta; // TODO: use this pixel in vga
+  //   end
+  //   else begin
+  //     pixel_addr_porta = pixel_addr_porta_compare;
+  //     pixel_valid_porta = pixel_valid_porta_compare;
+  //     pixel_in_porta = pixel_in_porta_compare;
+  //     pixel_out_porta_compare = pixel_out_porta;
+  //   end
+  // end
+
+  // always_comb begin
+  //   if (vgasndaddr == 1 || vgareadpixel == 1) begin
+  //     pixel_addr_porta = pixel_addr_vga; // TODO: use this pixel in vga
+  //     pixel_valid_porta = 0;
+  //     pixel_in_porta = 16'b0; // CHANGED FOR NOW
+  //     pixel_out_vga = pixel_out_porta; // TODO: use this pixel in vga
+  //   end
+  //   else begin
+  //     pixel_addr_porta = (320*vcount_rec) + hcount_rec;
+  //     pixel_valid_porta = data_valid_rec;
+  //     pixel_in_porta = pixel_data_rec;
+  //     pixel_out_porta_compare = pixel_out_porta[7:0]; //changed for now
+  //   end
+  // end
   
   //FRAME BUFFER FOR IMAGE + WRITING
   //Two Clock Frame Buffer:
   //Data written on 16.67 MHz (From camera)
   //Data read on 65 MHz (start of video pipeline information)
   //Latency is 2 cycles.
+  // xilinx_true_dual_port_read_first_2_clock_ram #(
+  //   .RAM_WIDTH(8),
+  //   .RAM_DEPTH(320*240))
+  //   frame_buffer (
+  //   //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
+  //   .addra(pixel_addr_porta),
+  //   .clka(clk_65mhz),
+  //   .wea(pixel_valid_porta),
+  //   .dina(pixel_in_porta),
+  //   .ena(1'b1),
+  //   .regcea(1'b1),
+  //   .rsta(sys_rst),
+  //   .douta(pixel_out_porta),
+  //   //Read Side (50 MHz) -- FOR ETHERNET
+  //   .addrb(pixel_addr_portb),
+  //   .dinb(16'b0),
+  //   .clkb(clk_50mhz),
+  //   .web(1'b0), // never write using port B
+  //   .enb(1'b1),
+  //   .regceb(1'b1),
+  //   .rstb(sys_rst),
+  //   .doutb(pixel_out_portb)
+  // );
   xilinx_true_dual_port_read_first_2_clock_ram #(
     .RAM_WIDTH(8),
     .RAM_DEPTH(320*240))
     frame_buffer (
     //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
-    .addra(pixel_addr_porta),
+    .addra((vcount_rec_pipe[2]*320) + hcount_rec_pipe[2]),
     .clka(clk_65mhz),
-    .wea(pixel_valid_porta),
-    .dina(pixel_in_porta),
+    .wea(data_valid_rec_pipe[2]),
+    .dina({2'b0, y[9:4]}),
     .ena(1'b1),
     .regcea(1'b1),
     .rsta(sys_rst),
-    .douta(pixel_out_porta),
-    //Read Side (50 MHz) -- FOR ETHERNET
-    .addrb(pixel_addr_portb),
+    .douta(),
+    //Read Side (65 MHz) -- FOR VGA
+    .addrb(pixel_addr_vga),
     .dinb(16'b0),
-    .clkb(clk_50mhz),
+    .clkb(clk_65mhz),
     .web(1'b0), // never write using port B
     .enb(1'b1),
     .regceb(1'b1),
@@ -305,72 +375,84 @@ module top_level(
     .vsync_out(vsync),
     .blank_out(blank)
   );
-  //Based on hcount and vcount as well as scaling
-  //gate the release of frame buffer information
-  //Latency: 0
-  scale scale_m(
-    .scale_in(2'b01),
-    .hcount_in(hcount_pipe[3]), //TODO: needs to use pipelined signal (PS2)
-    .vcount_in(vcount_pipe[3]), //TODO: needs to use pipelined signal (PS2)
-    .frame_buff_in(pixel_out_vga),
-    .cam_out(scaled_pixel_to_display)
-  );
-  //Based on current hcount and vcount as well as
-  //scaling and mirror information requests correct pixel
-  //from BRAM (on 65 MHz side).
-  //latency: 2 cycles
-  //IMPORTANT: this module is "start" of Output pipeline
-  //hcount and vcount are fine here.
-  //however latency in the image information starts to build up starting here
-  //and we need to make sure to continue to use screen location information
-  //that is "delayed" the right amount of cycles!
-  //AS A RESULT, most downstream modules after this will need to use appropriately
-  //pipelined versions of hcount, vcount, hsync, vsync, blank as needed
-  //these The pipelining of these stages will need to be determined
-  //for CHECKOFF 3!
-  mirror mirror_m(
+
+  // //MIRROR: 
+  // mirror mirror_m(
+  //   .clk_in(clk_65mhz),
+  //   .scale_in(2'b01),
+  //   .mirror_in(1'b1),
+  //   .hcount_in(hcount), 
+  //   .vcount_in(vcount),
+  //   .pixel_addr_out(pixel_addr_vga)
+  // );
+
+  //MIRROR:
+  // latency 2
+  mirror2 mirror2_m(
     .clk_in(clk_65mhz),
-    .scale_in(2'b01),
     .mirror_in(1'b1),
     .hcount_in(hcount), 
     .vcount_in(vcount),
     .pixel_addr_out(pixel_addr_vga)
   );
-  //VGA mux
-  vga_mux (
-    scaled_pixel_in(scaled_pixel_to_display),
-    pixel_out(mux_pixel)
+
+  //Scale:
+  // latency 0
+  scale2 scale2_m (
+    .hcount_in(hcount),
+    .vcount_in(vcount),
+    .frame_buff_in(pixel_out_portb),
+    .cam_out(mux_pixel)
   );
+
+  // //SCALE:
+  // //Based on hcount and vcount as well as scaling
+  // //gate the release of frame buffer information
+  // //Latency: 0
+  // scale scale_m(
+  //   .scale_in(2'b01),
+  //   .hcount_in(hcount_pipe[3]), 
+  //   .vcount_in(vcount_pipe[3]), 
+  //   .frame_buff_in(pixel_out_portb), //CHANGED THIS FOR TESTING!!
+  //   .cam_out(mux_pixel) //CHANGED FOR TESTING!!
+  // );
+  
+  
+  //VGA mux
+  // vga_mux vga_mux_inst(
+  //   .scaled_pixel_in(scaled_pixel_to_display),
+  //   .pixel_out(mux_pixel)
+  // );
   //blanking logic.
   //latency 1 cycle
   always_ff @(posedge clk_65mhz)begin
-    vga_r <= ~blank?mux_pixel_pipe[11:8]:0; //TODO: needs to use pipelined signal (PS6)
-    vga_g <= ~blank?mux_pixel_pipe[7:4]:0;  //TODO: needs to use pipelined signal (PS6)
-    vga_b <= ~blank?mux_pixel_pipe[3:0]:0;  //TODO: needs to use pipelined signal (PS6)
+    vga_r <= ~blank?mux_pixel[11:8]:0; //TODO: needs to use pipelined signal (PS6)
+    vga_g <= ~blank?mux_pixel[7:4]:0;  //TODO: needs to use pipelined signal (PS6)
+    vga_b <= ~blank?mux_pixel[3:0]:0;  //TODO: needs to use pipelined signal (PS6)
   end
 
-  assign vga_hs = ~hsync_pipe[7];  //TODO: needs to use pipelined signal (PS7)
-  assign vga_vs = ~vsync_pipe[7];  //TODO: needs to use pipelined signal (PS7)
+  assign vga_hs = ~hsync_pipe[2];  //TODO: needs to use pipelined signal (PS7)
+  assign vga_vs = ~vsync_pipe[2];  //TODO: needs to use pipelined signal (PS7)
 
   //ETHERNET COMPONENTS:
-  reverse_bit_order bit_order_reverser(
-    .clk(clk_50mhz),
-    .rst(sys_rst),
-    .pixel(pixel_out_portb),
-    .stall(1'b0), //TODO: make this the correct value for stall logic
-    .axiov(), //TODO: fill this in
-    .axiod(), //TODO: fill this in
-    .pixel_addr() //TODO: fill this in
-  );
-  eth_packer packer(
-    .clk(clk_50mhz),
-    .rst(sys_rst),
-    .axiiv(), //TODO: fill this in
-    .axiid(), //TODO: fill this in
-    .stall(), //TODO: fill this in
-    .phy_txen(), //TODO: fill this in
-    .phy_txd() //TODO: fill this in
-  );
+  // reverse_bit_order bit_order_reverser(
+  //   .clk(clk_50mhz),
+  //   .rst(sys_rst),
+  //   .pixel(pixel_out_portb),
+  //   .stall(1'b0), //TODO: make this the correct value for stall logic
+  //   .axiov(), //TODO: fill this in
+  //   .axiod(), //TODO: fill this in
+  //   .pixel_addr() //TODO: fill this in
+  // );
+  // eth_packer packer(
+  //   .clk(clk_50mhz),
+  //   .rst(sys_rst),
+  //   .axiiv(), //TODO: fill this in
+  //   .axiid(), //TODO: fill this in
+  //   .stall(), //TODO: fill this in
+  //   .phy_txen(), //TODO: fill this in
+  //   .phy_txd() //TODO: fill this in
+  // );
 
 
 endmodule

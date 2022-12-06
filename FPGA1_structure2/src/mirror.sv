@@ -8,7 +8,6 @@ module mirror(
   input wire [10:0] hcount_in,
   input wire [9:0] vcount_in,
   output logic [16:0] pixel_addr_out);
-  
   logic [10:0] hcount_temp;
   logic [9:0] vcount_pip;
 
@@ -18,8 +17,8 @@ module mirror(
       hcount_temp <= mirror_in?(240-hcount_in):hcount_in;
       pixel_addr_out <= hcount_temp + 240*(vcount_pip);
     end else if (scale_in==2'b01)begin
-      hcount_temp <= mirror_in?(1024-hcount_in):hcount_in;
-      pixel_addr_out <= ((hcount_temp>>4) + (hcount_temp>>2)) + 240*((vcount_pip>>4) + (vcount_pip>>2));
+      hcount_temp <= mirror_in?(480-hcount_in):hcount_in;
+      pixel_addr_out <= (hcount_temp/2) + 240*((vcount_pip)/2);
     end else begin
       //great bug!
       hcount_temp <= mirror_in?(640-hcount_in):hcount_in;
