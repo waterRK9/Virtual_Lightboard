@@ -1,0 +1,61 @@
+
+****** Vivado v2022.1 (64-bit)
+  **** SW Build 3526262 on Mon Apr 18 15:47:01 MDT 2022
+  **** IP Build 3524634 on Mon Apr 18 20:55:01 MDT 2022
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+
+source /tmp/build.tcl.Go4GDl
+# exec rm -rf .Xil .gen .srcs
+# set_param board.repoPaths /home/builder/.Xilinx/Vivado/2022.1/xhub/board_store/xilinx_board_store
+# xhub::refresh_catalog [xhub::get_xstores xilinx_board_store]
+# xhub::install [xhub::get_xitems digilentinc.com:xilinx_board_store:nexys4_ddr:1.1]
+INFO: [xhubtcl 76-61] The object 'digilentinc.com:xilinx_board_store:nexys4_ddr:1.1' is already installed, to update use xhub::update command.
+# set_part xc7a100tcsg324-1
+INFO: [Coretcl 2-1500] The part has been set to 'xc7a100tcsg324-1' for the current project only. Run set_part -help for more details. To evaluate different speed grades in the current design, use the set_speed_grade command, or use the open_checkpoint -part command to change the part used by an existing checkpoint design.
+# set_property board_part digilentinc.com:nexys4_ddr:part0:1.1 [current_project]
+# read_xdc /tmp/tmp.0EMP9h/xdc/top_level.xdc
+# read_verilog -sv /tmp/tmp.0EMP9h/src/scale2.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/mirror.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/clk_wiz_0_clk_wiz.v
+# read_verilog -sv /tmp/tmp.0EMP9h/src/ether.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/top_level.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/ethernet_clk_wiz.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/crc32.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/cksum.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/rgb_to_ycrcb.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/vga_mux.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/rotate2.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/camera_clk_wiz.v
+# read_verilog -sv /tmp/tmp.0EMP9h/src/mirror2.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/camera.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/bitorder.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/xilinx_true_dual_port_read_first_2_clock_ram.v
+# read_verilog -sv /tmp/tmp.0EMP9h/src/kernels.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/image_sprite.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/image_audio_splitter.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/filter.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/iverilog_hack.svh
+# read_verilog -sv /tmp/tmp.0EMP9h/src/clk_wiz_65mhz.v
+# read_verilog -sv /tmp/tmp.0EMP9h/src/frame_packager.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/xilinx_true_dual_port_read_first_1_clock_ram.v
+# read_verilog -sv /tmp/tmp.0EMP9h/src/rotate.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/vga.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/scale.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/seven_segment_controller.sv
+# read_verilog -sv /tmp/tmp.0EMP9h/src/recover.sv
+# synth_design -top top_level -part xc7a100tcsg324-1
+Command: synth_design -top top_level -part xc7a100tcsg324-1
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xc7a100t'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xc7a100t'
+INFO: [Device 21-403] Loading part xc7a100tcsg324-1
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 4 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 1877353
+ERROR: [Synth 8-2798] unexpected EOF [/tmp/tmp.0EMP9h/src/top_level.sv:277]
+Failed to read verilog '/tmp/tmp.0EMP9h/src/top_level.sv'
+INFO: [Common 17-83] Releasing license: Synthesis
+6 Infos, 0 Warnings, 0 Critical Warnings and 2 Errors encountered.
+synth_design failed
+ERROR: [Common 17-69] Command failed: Synthesis failed - please see the console or run log file for details
+INFO: [Common 17-206] Exiting Vivado at Wed Dec  7 10:00:30 2022...

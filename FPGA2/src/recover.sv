@@ -1,4 +1,7 @@
 //now runs on 65 MHz:
+
+`default_nettype none
+
 module recover (
   input wire cam_clk_in,
   input wire valid_pixel_in,
@@ -47,3 +50,5 @@ module recover (
     end
   end
 endmodule
+
+`default_nettype wire

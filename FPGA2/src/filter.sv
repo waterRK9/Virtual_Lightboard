@@ -1,4 +1,5 @@
 
+`default_nettype none
 module filter #(parameter K_SELECT=0)(
   input wire clk_in,
   input wire rst_in,
@@ -67,3 +68,5 @@ module filter #(parameter K_SELECT=0)(
   );
 
 endmodule
+
+`default_nettype wire
