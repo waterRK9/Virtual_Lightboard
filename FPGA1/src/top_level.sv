@@ -12,13 +12,16 @@ module top_level(
   output logic jblock, //signal for resetting camera
 
   output logic [3:0] vga_r, vga_g, vga_b,
-  output logic vga_hs, vga_vs
+  output logic vga_hs, vga_vs,
+
+  output logic [15:0] led //just here for the funs
 
   );
 
   //system reset switch linking
   logic sys_rst; //global system reset
   assign sys_rst = btnc; //just done to make sys_rst more obvious
+  assign led = sw; //switches drive LED (change if you want)
 
   //FINAL PROJECT VARS
   //Clock modules output
@@ -346,14 +349,14 @@ module top_level(
     .RAM_DEPTH(320*240))
     frame_buffer (
     //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
-    .addra((vcount_rec_pipe[2]*320) + hcount_rec_pipe[2]),
+    .addra(pixel_addr_porta_compare),
     .clka(clk_65mhz),
-    .wea(data_valid_rec_pipe[2]),
-    .dina({2'b0, y[9:4]}),
+    .wea(pixel_valid_porta_compare),
+    .dina(pixel_in_porta_compare),
     .ena(1'b1),
     .regcea(1'b1),
     .rsta(sys_rst),
-    .douta(),
+    .douta(pixel_out_porta_compare),
     //Read Side (65 MHz) -- FOR VGA
     .addrb(pixel_addr_vga),
     .dinb(16'b0),
@@ -402,7 +405,7 @@ module top_level(
     .hcount_in(hcount),
     .vcount_in(vcount),
     .frame_buff_in(pixel_out_portb),
-    .cam_out(mux_pixel)
+    .cam_out(scaled_pixel_to_display)
   );
 
   // //SCALE:
@@ -419,10 +422,10 @@ module top_level(
   
   
   //VGA mux
-  // vga_mux vga_mux_inst(
-  //   .scaled_pixel_in(scaled_pixel_to_display),
-  //   .pixel_out(mux_pixel)
-  // );
+  vga_mux vga_mux_inst(
+    .scaled_pixel_in(scaled_pixel_to_display),
+    .pixel_out(mux_pixel)
+  );
   //blanking logic.
   //latency 1 cycle
   always_ff @(posedge clk_65mhz)begin
