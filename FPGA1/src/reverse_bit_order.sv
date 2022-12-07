@@ -15,7 +15,7 @@ module reverse_bit_order(
 logic [1:0] state;
 
 logic [5:0] addr_bit_counter;
-logic [2:0] byte_bit_counter;
+logic [3:0] byte_bit_counter;
 
 logic [8:0] pixel_counter;
 logic [8:0] audio_counter;
@@ -24,27 +24,36 @@ typedef enum {SendAddress, SendPixel, SendAudio} States;
 
 //try combinational output
 always_comb begin
-case (state)
-    SendAddress: begin
-        // counts through addr length and outputs bits of addr one at a time in MSB, LSb order
-        if (addr_bit_counter < 4) begin //0, 2, 4, 6
-            axiod = {pixel_addr[4 + byte_bit_counter], pixel_addr[16 + byte_bit_counter]};
-        end else if (addr_bit_counter < 8) begin //8, 10, 12, 14
-            axiod = {pixel_addr[9 + byte_bit_counter], pixel_addr[8 + byte_bit_counter]};
-        end else if (addr_bit_counter < 12) begin // 16, 18, 20, 22
-            axiod = {pixel_addr[1 + byte_bit_counter], pixel_addr[byte_bit_counter]};
-        end
+    if (rst) begin
+        axiod = 0;
+    end else begin
+        case (state)
+            SendAddress: begin
+                if (byte_bit_counter < 8) begin
+                    // counts through addr length and outputs bits of addr one at a time in MSB, LSb order
+                    if (addr_bit_counter < 4) begin //0, 2, 4, 6
+                        axiod = {pixel_addr[17 + byte_bit_counter], pixel_addr[16 + byte_bit_counter]};
+                    end else if (addr_bit_counter < 8) begin //8, 10, 12, 14
+                        axiod = {pixel_addr[9 + byte_bit_counter], pixel_addr[8 + byte_bit_counter]};
+                    end else if (addr_bit_counter < 12) begin // 16, 18, 20, 22
+                        axiod = {pixel_addr[1 + byte_bit_counter], pixel_addr[byte_bit_counter]};
+                    end else begin
+                        axiod = 0;
+                    end 
+                    // axiod = 2'b11;
+                end else axiod = 0;
+            end
+
+            SendPixel: begin
+                axiod = {pixel[1 + byte_bit_counter], pixel[byte_bit_counter]};
+            end
+
+            SendAudio: begin
+                axiod = {pixel[1 + byte_bit_counter], pixel[byte_bit_counter]};
+            end
+            default: axiod = 0;
+        endcase
     end
-
-    SendPixel: begin
-    axiod = {pixel[1 + byte_bit_counter], pixel[byte_bit_counter]};
-    end
-
-    SendAudio: begin
-
-    end
-
-endcase
 end
 
 always_ff @(posedge clk) begin
@@ -52,9 +61,8 @@ always_ff @(posedge clk) begin
         pixel_addr <= 0;
         state <= SendAddress;
         axiov <= 0;
-        axiod <= 0;
         addr_bit_counter <= 0;
-        byte_bit_counter <= 0;
+        byte_bit_counter <= 8; //for timing, will reset to 0 upon returning to send address
         pixel_counter <= 0;
         audio_counter <= 0;
 
@@ -72,10 +80,10 @@ always_ff @(posedge clk) begin
             // end
 
             // cycles the byte counter every 8 bits
-            if (byte_bit_counter == 6) byte_bit_counter <= 0;
+            if (byte_bit_counter >= 6) byte_bit_counter <= 0;
             else byte_bit_counter <= byte_bit_counter + 2;
 
-            if (addr_bit_counter < 11) addr_bit_counter <= addr_bit_counter + 1;
+            if (addr_bit_counter < 12) addr_bit_counter <= addr_bit_counter + 1;
             else begin
                 addr_bit_counter <= 0;
                 state <= SendPixel;
@@ -85,16 +93,13 @@ always_ff @(posedge clk) begin
             axiov <= 1;
             //switch to next pixel 2 cycles early to give BRAM time to change
             if (byte_bit_counter == 4) begin 
-                byte_bit_counter <= 0;
-                pixel_addr <= pixel_addr + 1;
+                if (pixel_addr < 76800) pixel_addr <= pixel_addr + 1;
+                else pixel_addr <= 0;
             end
 
             // cycles the byte counter every 8 bits
-            if (byte_bit_counter == 6) byte_bit_counter <= 0;
+            if (byte_bit_counter >= 6) byte_bit_counter <= 0;
             else byte_bit_counter <= byte_bit_counter + 2;
-
-            // actual pixel output
-            // axiod <= {pixel[1 + byte_bit_counter], pixel[byte_bit_counter]};
 
             //once 320 pixels sent, switch to sending Audio
             if (pixel_counter < 319) pixel_counter <= byte_bit_counter + 1;
@@ -112,9 +117,8 @@ always_ff @(posedge clk) begin
     end else if (stall) begin //same as everything in rst, except for reseting the pixel_addr
         state <= SendAddress;
         axiov <= 0;
-        axiod <= 0;
         addr_bit_counter <= 0;
-        byte_bit_counter <= 0;
+        byte_bit_counter <= 8; 
         pixel_counter <= 0;
         audio_counter <= 0;
     end

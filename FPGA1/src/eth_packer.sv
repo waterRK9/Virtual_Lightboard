@@ -2,6 +2,7 @@
 `timescale 1ns / 1ps
 
 module eth_packer (
+    input wire cancelled,
     input wire clk,
     input wire rst,
     input wire axiiv,
@@ -15,9 +16,9 @@ module eth_packer (
 parameter DEST_ADDR_DIBIT = 2'b11; 
 parameter SOURCE_ADDR = 48'h69695A065491; //note: flip to MSB/ LSb order if using
 
-parameter PREAMBLE_DIBITS = 32 - 1;
-parameter ADDR_DIBITS = 24 - 1;
-parameter MIN_DATA_DIBITS = 20 - 1; //(320 * 4) - 1;
+parameter PREAMBLE_DIBITS = 28 - 1; // 7 * 4
+parameter ADDR_DIBITS = 24 - 1; 
+parameter MIN_DATA_DIBITS = (320*4) - 1; //(320 * 4) - 1;
 parameter CRC_DIBITS = 16 - 1;
 parameter IFG_PERIOD = 48 -1; // Interpacket-Gap: standard minimum is time to send 96 bits (43 cycles)
 parameter LEN_DIBITS = 8 - 1;
@@ -31,11 +32,12 @@ logic [8:0] audio_counter;
 
 typedef enum {Idle = 0,
               SendPre = 1, 
-              SendDestAddr = 2, 
-              SendSourceAddr = 3, 
-              SendLength = 4,
-              SendData = 5, 
-              SendTail = 6} States;
+              SendSFD = 2,
+              SendDestAddr, 
+              SendSourceAddr, 
+              SendLength,
+              SendData, 
+              SendTail} States;
 
 // All modules (& associated logic) here
 logic crc32rst;
@@ -50,8 +52,18 @@ crc32 crc32 (
     .axiov(cksum_calculated),
     .axiod(cksum)
 );
+
+// ila_0 {
+//     .clk(clk),
+//     .probe0(phy_txen),  //1
+//     .probe1(phy_txd), //2
+//     .probe2(cksum), //32
+//     .probe3(stall), //1 
+//     .probe4(state) //4
+// };
+
 always_comb begin
-    if (state > 1 && state < 6) begin
+    if (state > 2 && state < 7) begin
         cksum_axiiv = 1;
     end else begin
         cksum_axiiv = 0;
@@ -64,9 +76,19 @@ always_comb begin
             stall = 1;
         end
         SendPre: begin
-            phy_txen = 1'b1;
+            if (dibit_counter == 0) phy_txen = 0;
+            else phy_txen = 1'b1;
+            
             if (dibit_counter < PREAMBLE_DIBITS) phy_txd = 2'b01; 
-            else if (dibit_counter == PREAMBLE_DIBITS) phy_txd = 2'b11; 
+            else phy_txd = 2'b11;
+            stall = 1;
+        end
+        SendSFD: begin
+            phy_txen = 1'b1;
+            if (dibit_counter == 0) phy_txd = 2'b01;
+            else if (dibit_counter == 1) phy_txd = 2'b11;
+            else if (dibit_counter == 2 || dibit_counter == 3) phy_txd = 2'b01;
+            else phy_txd = 0;
             stall = 1;
         end
         SendDestAddr: begin
@@ -81,8 +103,15 @@ always_comb begin
         end
         SendLength: begin
             phy_txen = 1'b1;
-            phy_txd = 2'b01; //note: FPGA2 doesn't care about length either right now, we could potentially use it to error check for drops
-            stall = 1;
+            // phy_txd = 2'b01; //note: FPGA2 doesn't care about length either right now, we could potentially use it to error check for drops
+            if (dibit_counter == 7) phy_txd = 2'b01;
+            else if (dibit_counter == 3 || dibit_counter == 4 || dibit_counter == 6) phy_txd = 2'b11;
+            else if (dibit_counter == 0 || dibit_counter == 1 || dibit_counter == 2) phy_txd = 2'b10;
+            else phy_txd = 2'b0;
+
+            if (dibit_counter > 6) stall = 0;
+            else stall = 1;
+            // 1010_1011_1100_1101 ABCD
         end
         SendData: begin
             phy_txen = 1'b1;
@@ -91,15 +120,16 @@ always_comb begin
         end
         SendTail: begin
             phy_txen = 1'b1;
-            if (dibit_counter <= 3) begin 
-                phy_txd = {cksum[25 + byte_bit_counter], cksum[24 + byte_bit_counter]};
-            end else if (dibit_counter <= 7) begin 
-                phy_txd = {cksum[17 + byte_bit_counter], cksum[16 + byte_bit_counter]};
-            end else if (dibit_counter <= 11) begin 
-                phy_txd = {cksum[9 + byte_bit_counter], cksum[8 + byte_bit_counter]};
-            end else if (dibit_counter <= 15) begin
-                phy_txd = {cksum[1 + byte_bit_counter], cksum[byte_bit_counter]};
-            end
+            if (dibit_counter <= 3) phy_txd = {cksum[25 + byte_bit_counter], cksum[24 + byte_bit_counter]};
+            else if (dibit_counter <= 7) phy_txd = {cksum[17 + byte_bit_counter], cksum[16 + byte_bit_counter]};
+            else if (dibit_counter <= 11) phy_txd = {cksum[9 + byte_bit_counter], cksum[8 + byte_bit_counter]};
+            else if (dibit_counter <= 15) phy_txd = {cksum[1 + byte_bit_counter], cksum[byte_bit_counter]};
+            else phy_txd = {cksum[1 + byte_bit_counter], cksum[byte_bit_counter]}; //to get rid of latch
+            stall = 1;
+        end
+        default: begin
+            phy_txen = 1'b0;
+            phy_txd = 2'b0;
             stall = 1;
         end
     endcase
@@ -114,7 +144,9 @@ always_ff @(posedge clk) begin
         crc32rst <= 1;
         dibit_counter <= 0;
     end else begin
-        case(state)
+        if (cancelled) state <= Idle;
+        else begin 
+            case(state)
             Idle: begin //
                 byte_bit_counter <= 4'b0;
                 audio_counter <= 9'b0;
@@ -133,6 +165,16 @@ always_ff @(posedge clk) begin
                     dibit_counter <= dibit_counter + 1;
                 end
                 else if (dibit_counter == PREAMBLE_DIBITS) begin
+                    dibit_counter <= 0;
+                    state <= SendSFD;
+                    $display("Sending SFD Now");
+                end
+            end
+            SendSFD: begin
+                if (dibit_counter < 3) begin
+                    dibit_counter <= dibit_counter + 1;
+                end
+                else if (dibit_counter == 3) begin
                     dibit_counter <= 0;
                     state <= SendDestAddr;
                     $display("Sending Dest Now");
@@ -191,9 +233,9 @@ always_ff @(posedge clk) begin
                     state <= Idle;
                     crc32rst <= 1;
                 end
-
             end
         endcase
+        end
     end
 end
 
