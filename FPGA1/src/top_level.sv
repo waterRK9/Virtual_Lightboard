@@ -5,6 +5,7 @@ module top_level(
   input wire clk_100mhz, //clock @ 100 mhz
   input wire [15:0] sw, //switches
   input wire btnc, //btnc (used for reset)
+  input wire btnr,
 
   input wire [7:0] ja, //lower 8 bits of data from camera
   input wire [2:0] jb, //upper three bits from camera (return clock, vsync, hsync)
