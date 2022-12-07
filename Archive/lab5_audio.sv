@@ -12,7 +12,6 @@ module top_level(   input clk_100mhz,
                     output logic aud_pwm,
                     output logic aud_sd
     );  
-    // can up this number to decrease samples needed, 
     parameter SAMPLE_COUNT = 2082;//gets approximately (will generate audio at approx 48 kHz sample rate.
     
     logic [15:0] sample_counter;
@@ -52,7 +51,7 @@ module top_level(   input clk_100mhz,
     recorder myrec( .clk_in(clk_100mhz),.rst_in(btnd),
                     .record_in(btnc),.ready_in(sample_trigger),
                     .filter_in(sw[0]),.mic_in(sampled_adc_data[11:4]),
-                    .data_out(recorder_data), .sw(sw));   
+                    .data_out(recorder_data));   
                                                                                             
     volume_control vc (.vol_in(sw[15:13]),
                        .signal_in(recorder_data), .signal_out(vol_out));
@@ -78,7 +77,6 @@ module recorder(
   input logic record_in,            // 0 for playback, 1 for record
   input logic ready_in,             // 1 when data is available
   input logic filter_in,            // 1 when using low-pass filter
-  input logic [15:0] sw,
   input logic signed [7:0] mic_in,         // 8-bit PCM data from mic
   output logic signed [7:0] data_out       // 8-bit PCM data to headphone
 ); 
@@ -95,7 +93,7 @@ module recorder(
     fir31 fir ( .clk_in(clk_in),
                 .rst_in(rst_in),
                 .ready_in(ready_in),
-                .x_in(mic_in),
+                .x_in(filter_input),
                 .y_out(filter_out));   
 
     logic [7:0] data_to_bram;
@@ -115,9 +113,128 @@ module recorder(
     */
 
     always_ff @(posedge clk_in)begin
-      if (sw[3]) data_out = mic_in;
-      else if (sw[1]) data_out = filter_in?tone_440:tone_750;
-      else if (sw[2]) data_out = filter_out[17:10];
+      data_out = filter_in?tone_440:tone_750;
+      /*
+      if (rst_in) begin
+        addr <= 0;
+        lastSample <= 0;
+        eightCounter <= 0;
+        state <= Playback;
+      end else if (filter_in) begin
+        // data_out = filter_in?tone_440:tone_750; //send tone immediately to output
+        case (state)
+          Record: begin
+            // controls incrementing address every 8 samples
+            if (record_in) begin
+              if (addr < MEMORY_DEPTH - 1 && ready_in) begin
+                if (eightCounter == 8) begin
+                  addr <= addr + 1;
+                  lastSample <= lastSample + 1;
+                  eightCounter <= 0;
+                end else if (eightCounter < 8) begin
+                  eightCounter <= eightCounter + 1;
+                end 
+
+                // control write signal sepeartely, only writing every 8 samples
+                if (eightCounter == 8) wea <= 1;
+                else wea <= 0;
+
+                filter_input <= mic_in;
+                data_to_bram <= filter_out[17:10];
+                data_out <= filter_out[17:10];
+              end
+              
+            end else begin
+              state <= Playback;
+              addr <= 0;
+              eightCounter <= 0;
+              wea <= 0;
+            end
+          end
+          Playback: begin
+            if (record_in) begin
+              state <= Record;
+              addr <= 0;
+              lastSample <= 0;
+              eightCounter <= 0;
+            end else begin
+              if (ready_in) begin
+                // controls incrementing address every 8 cycles
+                if (addr < lastSample - 1) begin
+                    if (eightCounter == 8) begin
+                      addr <= addr + 1;
+                      eightCounter <= 0;
+                      filter_input <= data_from_bram;
+                    end else if (eightCounter < 8) begin
+                      filter_input <= 0;
+                      eightCounter <= eightCounter + 1;
+                  end
+                end else if (addr >= lastSample -1) begin
+                  addr <= 0;
+                  eightCounter <= 0;
+                end
+
+                data_out <= filter_out[14:7];
+              end
+            end
+          end
+        endcase
+      end else begin
+        case (state)
+          Record: begin
+            // controls incrementing address every 8 samples
+            if (record_in) begin
+              if (addr < MEMORY_DEPTH - 1 && ready_in) begin
+                if (eightCounter == 8) begin
+                  addr <= addr + 1;
+                  lastSample <= lastSample + 1;
+                  eightCounter <= 0;
+                end else if (eightCounter < 8) begin
+                  eightCounter <= eightCounter + 1;
+                end 
+
+                // control write signal sepeartely, only writing every 8 samples
+                if (eightCounter == 8) wea <= 1;
+                else wea <= 0;
+
+                data_to_bram <= mic_in;
+                data_out <= mic_in;
+              end
+            end else begin
+              state <= Playback;
+              addr <= 0;
+              eightCounter <= 0;
+              wea <= 0;
+            end
+          end
+          Playback: begin
+            if (record_in) begin
+              state <= Record;
+              addr <= 0;
+              lastSample <= 0;
+              eightCounter <= 0;
+            end else begin
+              if (ready_in) begin
+                // controls incrementing address every 8 cycles
+                if (addr < lastSample - 1) begin
+                    if (eightCounter == 8) begin
+                      addr <= addr + 1;
+                      eightCounter <= 0;
+                    end else if (eightCounter < 8) begin
+                      eightCounter <= eightCounter + 1;
+                  end
+                end else if (addr >= lastSample -1) begin
+                  addr <= 0;
+                  eightCounter <= 0;
+                end
+
+                data_out <= data_from_bram;
+              end
+            end
+          end
+        endcase
+      end
+      */
     end                            
 endmodule                              
 
