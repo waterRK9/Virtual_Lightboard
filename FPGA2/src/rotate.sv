@@ -1,3 +1,5 @@
+`default_nettype none
+
 module rotate (
   input wire cam_clk_in,
 
@@ -30,3 +32,5 @@ module rotate (
     end
   end
 endmodule
+
+`default_nettype wire
