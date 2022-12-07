@@ -14,7 +14,7 @@ module top_level(
   output logic [3:0] vga_r, vga_g, vga_b,
   output logic vga_hs, vga_vs,
 
-  output logic [15:0] led //just here for the funs
+  output logic [15:0] led, //just here for the funs
 
   output logic ca, cb, cc, cd, ce, cf, cg, // 7-seg display
   output logic [7:0] an,
@@ -23,13 +23,14 @@ module top_level(
   output logic [1:0] eth_txd,
   output logic eth_refclk,
   output logic eth_rstn
+
   );
 
   //system reset switch linking
   logic sys_rst; //global system reset
   assign sys_rst = btnc; //just done to make sys_rst more obvious
   assign eth_rstn = ~sys_rst;
-  assign led = sw; //switches drive LED (change if you want)
+  // assign led = sw; //switches drive LED (change if you want)
 
   //FINAL PROJECT VARS
   //Clock modules output
@@ -58,7 +59,7 @@ module top_level(
   logic data_valid_filtered; //valid signals for filter modules
 
   //RGB to YCrCb module output 
-  logic [9:0] y, cr, cb; //ycrcb conversion of full pixel
+  logic [9:0] y, cr, Cb; //ycrcb conversion of full pixel
 
   //Threshold module output:
   logic mask; //Whether or not thresholded pixel is 1 or 0
@@ -236,7 +237,7 @@ module top_level(
     .b_in({pixel_data_rec[4:0], 5'b0}), //all five of blue
     .y_out(y),
     .cr_out(cr),
-    .cb_out(cb)
+    .cb_out(Cb)
   );
 
   //THRESHOLD:
@@ -250,7 +251,7 @@ module top_level(
      .b_in(pixel_data_rec_pipe[2][4:1]), 
      .y_in(y[9:6]),
      .cr_in(cr[9:6]),
-     .cb_in(cb[9:6]),
+     .cb_in(Cb[9:6]),
      .lower_bound_in(sw[12:10]),
      .upper_bound_in(sw[15:13]),
      .mask_out(mask),
@@ -393,7 +394,7 @@ module top_level(
     .rsta(sys_rst),
     .douta(pixel_out_porta_compare),
     //Read Side (65 MHz) -- FOR VGA
-    .addrb(pixel_addr_rbo),
+    .addrb(pixel_addr_rbo [16:0]),
     .dinb(8'b0),
     .clkb(eth_refclk),
     .web(1'b0), // never write using port B
