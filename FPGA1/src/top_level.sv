@@ -23,8 +23,8 @@ module top_level(
   output logic eth_txen,
   output logic [1:0] eth_txd,
   output logic eth_refclk,
-  output logic eth_rstn
-
+  output logic eth_rstn,
+  input wire eth_crsdv
   );
 
   //system reset switch linking
