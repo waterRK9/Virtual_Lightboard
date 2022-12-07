@@ -1,3 +1,4 @@
+`default_nettype wire
 
 //  Xilinx True Dual Port RAM, Read First, Single Clock
 //  This code implements a parameterizable true dual port memory (both ports can read and write).
