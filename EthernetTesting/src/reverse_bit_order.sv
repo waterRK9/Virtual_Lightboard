@@ -102,7 +102,7 @@ always_ff @(posedge clk) begin
             else byte_bit_counter <= byte_bit_counter + 2;
 
             //once 320 pixels sent, switch to sending Audio
-            if (pixel_counter < 320) pixel_counter <= byte_bit_counter + 1;
+            if (pixel_counter < 319) pixel_counter <= byte_bit_counter + 1;
             else begin
                 pixel_counter <= 0;
                 state <= SendAudio;

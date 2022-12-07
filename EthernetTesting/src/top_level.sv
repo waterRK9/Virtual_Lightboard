@@ -4,8 +4,6 @@
 module top_level(
   input wire clk, //clock @ 100 mhz
   input wire btnc, //btnc (used for reset)
-  input wire btnr, // btnr (used for sending a packet)
-  input wire eth_crsdv,
 
   output logic [15:0] led, //just here for the funs
   output logic ca, cb, cc, cd, ce, cf, cg,
@@ -42,16 +40,16 @@ module top_level(
   logic [24:0] counter;
   logic [7:0] pixel;
 
-  
   always_ff @(posedge eth_refclk) begin
-
+    if (sys_rst) begin
       pixel <= 8'b11111111;
-      if (btnr) begin
-        flip <= 0;
-      end else if (old_txen == 1 && eth_txen == 0) begin
+      old_txen <= 0;
+    end else begin
+      if (old_txen == 1 && eth_txen == 0) begin
         flip <= 1;
-      end
+      end 
       old_txen <= eth_txen;
+    end
   end
 
   logic stall;

@@ -145,7 +145,7 @@ module top_level(
         .doutb(frame_buff)
     );
 
-    //note: keep for testing so we can see what we is sent
+    //note: keep for testing so we can see what we are sent
     logic [31:0] seven_segment_controller_val_in;
     seven_segment_controller seven_segment_controller (
         .clk_in(eth_refclk),
