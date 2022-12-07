@@ -540,9 +540,11 @@ module top_level(
           seven_segment_controller_val_in <= aggregate_axiod;
       end
 
-      if (old_txen == 1 && eth_txen == 0) begin
+      if (btnr) begin
+        flip <= 0;
+      end else if (old_txen == 1 && eth_txen == 0) begin
         flip <= 1;
-      end 
+      end
 
       old_txen <= eth_txen;
       old_rbo_axiov <= rbo_axiov;

@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 `default_nettype none
 
 module top_level(
@@ -91,31 +92,31 @@ module top_level(
     );
     assign led[14] = done;
 
-    //Delay: 
-    logic valid_addr_in, valid_pixel_in, valid_audio_in;
-    logic [16:0] pixel_addr_in;
-    logic [7:0] pixel_in, audio_in;
-    image_audio_splitter image_audio_splitter(
-        .clk(eth_ref_clk),
-        .rst(sys_rst),
-        .axiiv(firewall_axiov), 
-        .axiid(firewall_axiod), 
+   //Delay: 
+   logic valid_addr_in, valid_pixel_in, valid_audio_in;
+   logic [16:0] pixel_addr_in;
+   logic [7:0] pixel_in, audio_in;
+   image_audio_splitter image_audio_splitter(
+       .clk(eth_refclk),
+       .rst(sys_rst),
+       .axiiv(firewall_axiov), 
+       .axiid(firewall_axiod), 
 
-        .addr_axiov(valid_addr_in),
-        .pixel_axiov(valid_pixel_in), 
-        .audio_axiov(valid_audio_in), 
+       .addr_axiov(valid_addr_in),
+       .pixel_axiov(valid_pixel_in), 
+       .audio_axiov(valid_audio_in), 
 
-        .addr(pixel_addr_in),
-        .pixel(pixel_in),
-        .audio(audio_in)
+       .addr(pixel_addr_in),
+       .pixel(pixel_in),
+       .audio(audio_in)
     );
 
     //Delay: 1 cycle
     logic pixel_write_enable;
     logic [7:0] pixel_written;
     logic [16:0] addr_written;
-    module frame_packager(
-        .clk(eth_ref_clk),
+    frame_packager fp(
+        .clk(eth_refclk),
         .rst(sys_rst),
         .addr_axiiv(valid_addr_in),
         .addr_axiid(pixel_addr_in),
@@ -138,7 +139,7 @@ module top_level(
         frame_buffer (
         //Write Side (50MHz)
         .addra(addr_written),
-        .clka(eth_ref_clk),
+        .clka(eth_refclk),
         .wea(pixel_write_enable), //question: do I need rotate here? What if I read it out without rotating?
         .dina(pixel_written),
         .ena(1'b1),
@@ -185,7 +186,7 @@ module top_level(
     logic [11:0] mux_pixel_pipe;
 
     //Pipelining
-    always_ff @(posedge clk_65mhz)begin
+    always_ff @(posedge clk_65mhz) begin
         hcount_pipe[0] <= hcount;
         vcount_pipe[0] <= vcount;
         blank_pipe[0] <= blank;
@@ -245,6 +246,17 @@ module top_level(
 
 
     //note: keep for testing so we can see what we are sent
+    logic [31:0] aggregate_axiod;
+    logic aggregate_axiov;
+    aggregate aggregate (
+    .clk(eth_refclk),
+    .rst(sys_rst),
+    .axiiv(firewall_axiov),
+    .axiid(firewall_axiod),
+    .axiov(aggregate_axiov),
+    .axiod(aggregate_axiod)
+    );
+
     logic [31:0] seven_segment_controller_val_in;
     seven_segment_controller seven_segment_controller (
         .clk_in(eth_refclk),
@@ -258,13 +270,13 @@ module top_level(
     always_ff @(posedge eth_refclk) begin
         if (sys_rst) begin
             led[13:0] <= 0;
-            seven_segment_controller_val_in = 0;
+            seven_segment_controller_val_in <= 0;
 
         end else if (firewall_axiov & !old_firewall_axiov) begin
             led[13:0] <= led[13:0] + 1;
         end
 
-        if (aggregate_axiov) begin
+        else if (aggregate_axiov) begin
             seven_segment_controller_val_in <= aggregate_axiod;
         end
 
@@ -273,5 +285,4 @@ module top_level(
 
 endmodule
 
-`timescale 1ns / 1ps
 `default_nettype wire

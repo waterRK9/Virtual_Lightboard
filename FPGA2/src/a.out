@@ -1,0 +1,60 @@
+#! /usr/local/Cellar/icarus-verilog/11.0/bin/vvp
+:ivl_version "11.0 (stable)";
+:ivl_delay_selection "TYPICAL";
+:vpi_time_precision - 12;
+:vpi_module "/usr/local/Cellar/icarus-verilog/11.0/lib/ivl/system.vpi";
+:vpi_module "/usr/local/Cellar/icarus-verilog/11.0/lib/ivl/vhdl_sys.vpi";
+:vpi_module "/usr/local/Cellar/icarus-verilog/11.0/lib/ivl/vhdl_textio.vpi";
+:vpi_module "/usr/local/Cellar/icarus-verilog/11.0/lib/ivl/v2005_math.vpi";
+:vpi_module "/usr/local/Cellar/icarus-verilog/11.0/lib/ivl/va_math.vpi";
+S_0x7fe2db304080 .scope module, "top_level" "top_level" 2 4;
+ .timescale -9 -12;
+    .port_info 0 /INPUT 1 "clk";
+    .port_info 1 /INPUT 1 "btnc";
+    .port_info 2 /INPUT 1 "eth_crsdv";
+    .port_info 3 /INPUT 2 "eth_rxd";
+    .port_info 4 /OUTPUT 16 "led";
+    .port_info 5 /OUTPUT 1 "ca";
+    .port_info 6 /OUTPUT 1 "cb";
+    .port_info 7 /OUTPUT 1 "cc";
+    .port_info 8 /OUTPUT 1 "cd";
+    .port_info 9 /OUTPUT 1 "ce";
+    .port_info 10 /OUTPUT 1 "cf";
+    .port_info 11 /OUTPUT 1 "cg";
+    .port_info 12 /OUTPUT 8 "an";
+    .port_info 13 /OUTPUT 1 "eth_rstn";
+    .port_info 14 /OUTPUT 1 "eth_refclk";
+    .port_info 15 /OUTPUT 4 "vga_r";
+    .port_info 16 /OUTPUT 4 "vga_g";
+    .port_info 17 /OUTPUT 4 "vga_b";
+    .port_info 18 /OUTPUT 1 "vga_hs";
+    .port_info 19 /OUTPUT 1 "vga_vs";
+v0x600003240000_0 .var "an", 7 0;
+o0x7fe2db032038 .functor BUFZ 1, C4<z>; HiZ drive
+v0x600003244000_0 .net "btnc", 0 0, o0x7fe2db032038;  0 drivers
+v0x600003244090_0 .var "ca", 0 0;
+v0x600003244120_0 .var "cb", 0 0;
+v0x6000032441b0_0 .var "cc", 0 0;
+v0x600003244240_0 .var "cd", 0 0;
+v0x6000032442d0_0 .var "ce", 0 0;
+v0x600003244360_0 .var "cf", 0 0;
+v0x6000032443f0_0 .var "cg", 0 0;
+o0x7fe2db0321b8 .functor BUFZ 1, C4<z>; HiZ drive
+v0x600003244480_0 .net "clk", 0 0, o0x7fe2db0321b8;  0 drivers
+o0x7fe2db0321e8 .functor BUFZ 1, C4<z>; HiZ drive
+v0x600003244510_0 .net "eth_crsdv", 0 0, o0x7fe2db0321e8;  0 drivers
+v0x6000032445a0_0 .var "eth_refclk", 0 0;
+v0x600003244630_0 .var "eth_rstn", 0 0;
+o0x7fe2db032278 .functor BUFZ 2, C4<zz>; HiZ drive
+v0x6000032446c0_0 .net "eth_rxd", 1 0, o0x7fe2db032278;  0 drivers
+v0x600003244750_0 .var "led", 15 0;
+v0x6000032447e0_0 .var "vga_b", 3 0;
+v0x600003244870_0 .var "vga_g", 3 0;
+v0x600003244900_0 .var "vga_hs", 0 0;
+v0x600003244990_0 .var "vga_r", 3 0;
+v0x600003244a20_0 .var "vga_vs", 0 0;
+# The file index is used to find the file name in the following table.
+:file_names 3;
+    "N/A";
+    "<interactive>";
+    "top_level.sv";
