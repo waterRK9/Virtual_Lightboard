@@ -51,11 +51,19 @@ module compare (
     logic [16:0] com_address;
     logic [8:0][16:0] com_addresses_around;
     logic com_received_flag;
+    logic address_in_com_flag;
+
+    logic [10:0] curr_hcount;
+    logic [9:0] curr_vcount;
+    logic [7:0] pixel_yvalue;
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
-            inner_state <= CHECK;
-            valid_pixel <= 0;
+            inner_state <= CALCULATE;
+            valid_pixel_forbram <= 0;
+            curr_hcount <= 0;
+            curr_vcount <= 0;
+            pixel_yvalue <= 0;
             // resets com_addresses to the top left corner since no COM has been received yet
             com_addresses_around[0] <= 0;
             com_addresses_around[1] <= 0;
@@ -89,9 +97,9 @@ module compare (
                         com_addresses_around[8] <= com_address + 321;
                     end
                     else if (y_com_in == 0) begin
-                        com_addresses_around[0] <= 16'h12C01; // pixel outside frame
-                        com_addresses_around[1] <= 16'h12C01;
-                        com_addresses_around[2] <= 16'h12C01;
+                        com_addresses_around[0] <= 17'h12C01; // pixel outside frame
+                        com_addresses_around[1] <= 17'h12C01;
+                        com_addresses_around[2] <= 17'h12C01;
                         com_addresses_around[3] <= com_address - 1;
                         com_addresses_around[4] <= com_address;
                         com_addresses_around[5] <= com_address + 1;
@@ -106,91 +114,98 @@ module compare (
                         com_addresses_around[3] <= com_address - 1;
                         com_addresses_around[4] <= com_address;
                         com_addresses_around[5] <= com_address + 1;
-                        com_addresses_around[6] <= 16'h12C01;
-                        com_addresses_around[7] <= 16'h12C01;
-                        com_addresses_around[8] <= 16'h12C01;
+                        com_addresses_around[6] <= 17'h12C01;
+                        com_addresses_around[7] <= 17'h12C01;
+                        com_addresses_around[8] <= 17'h12C01;
                     end
                 end else if (x_com_in == 319) begin // this means we are in the rightmost line
                     if (y_com_in > 0 && y_com_in < 239) begin
                         com_addresses_around[0] <= com_address - 321;
                         com_addresses_around[1] <= com_address - 320;
-                        com_addresses_around[2] <= 16'h12C01;
+                        com_addresses_around[2] <= 17'h12C01;
                         com_addresses_around[3] <= com_address - 1;
                         com_addresses_around[4] <= com_address;
-                        com_addresses_around[5] <= 16'h12C01;
+                        com_addresses_around[5] <= 17'h12C01;
                         com_addresses_around[6] <= com_address + 319;
                         com_addresses_around[7] <= com_address + 320;
-                        com_addresses_around[8] <= 16'h12C01;
+                        com_addresses_around[8] <= 17'h12C01;
                     end
                     else if (y_com_in == 0) begin
-                        com_addresses_around[0] <= 16'h12C01; // pixel outside frame
-                        com_addresses_around[1] <= 16'h12C01;
-                        com_addresses_around[2] <= 16'h12C01;
+                        com_addresses_around[0] <= 17'h12C01; // pixel outside frame
+                        com_addresses_around[1] <= 17'h12C01;
+                        com_addresses_around[2] <= 17'h12C01;
                         com_addresses_around[3] <= com_address - 1;
                         com_addresses_around[4] <= com_address;
-                        com_addresses_around[5] <= 16'h12C01;
+                        com_addresses_around[5] <= 17'h12C01;
                         com_addresses_around[6] <= com_address + 319;
                         com_addresses_around[7] <= com_address + 320;
-                        com_addresses_around[8] <= 16'h12C01;
+                        com_addresses_around[8] <= 17'h12C01;
                     end
                     else if (y_com_in == 239) begin
                         com_addresses_around[0] <= com_address - 321;
                         com_addresses_around[1] <= com_address - 320;
-                        com_addresses_around[2] <= 16'h12C01;
+                        com_addresses_around[2] <= 17'h12C01;
                         com_addresses_around[3] <= com_address - 1;
                         com_addresses_around[4] <= com_address;
-                        com_addresses_around[5] <= 16'h12C01;
-                        com_addresses_around[6] <= 16'h12C01;
-                        com_addresses_around[7] <= 16'h12C01;
-                        com_addresses_around[8] <= 16'h12C01;
+                        com_addresses_around[5] <= 17'h12C01;
+                        com_addresses_around[6] <= 17'h12C01;
+                        com_addresses_around[7] <= 17'h12C01;
+                        com_addresses_around[8] <= 17'h12C01;
                     end
                 end else if (x_com_in == 0) begin // this means we are in the leftmost line
                     if (y_com_in > 0 && y_com_in < 239) begin
-                        com_addresses_around[0] <= 16'h12C01;
+                        com_addresses_around[0] <= 17'h12C01;
                         com_addresses_around[1] <= com_address - 320;
                         com_addresses_around[2] <= com_address - 319;
-                        com_addresses_around[3] <= 16'h12C01;
+                        com_addresses_around[3] <= 17'h12C01;
                         com_addresses_around[4] <= com_address;
                         com_addresses_around[5] <= com_address + 1;
-                        com_addresses_around[6] <= 16'h12C01;
+                        com_addresses_around[6] <= 17'h12C01;
                         com_addresses_around[7] <= com_address + 320;
                         com_addresses_around[8] <= com_address + 321;
                     end
                     else if (y_com_in == 0) begin
-                        com_addresses_around[0] <= 16'h12C01; // pixel outside frame
-                        com_addresses_around[1] <= 16'h12C01;
-                        com_addresses_around[2] <= 16'h12C01;
-                        com_addresses_around[3] <= 16'h12C01;
+                        com_addresses_around[0] <= 17'h12C01; // pixel outside frame
+                        com_addresses_around[1] <= 17'h12C01;
+                        com_addresses_around[2] <= 17'h12C01;
+                        com_addresses_around[3] <= 17'h12C01;
                         com_addresses_around[4] <= com_address;
                         com_addresses_around[5] <= com_address + 1;
-                        com_addresses_around[6] <= 16'h12C01;
+                        com_addresses_around[6] <= 17'h12C01;
                         com_addresses_around[7] <= com_address + 320;
                         com_addresses_around[8] <= com_address + 321;
                     end
                     else if (y_com_in == 239) begin
-                        com_addresses_around[0] <= 16'h12C01;
+                        com_addresses_around[0] <= 17'h12C01;
                         com_addresses_around[1] <= com_address - 320;
                         com_addresses_around[2] <= com_address - 319;
-                        com_addresses_around[3] <= 16'h12C01;
+                        com_addresses_around[3] <= 17'h12C01;
                         com_addresses_around[4] <= com_address;
                         com_addresses_around[5] <= com_address + 1;
-                        com_addresses_around[6] <= 16'h12C01;
-                        com_addresses_around[7] <= 16'h12C01;
-                        com_addresses_around[8] <= 16'h12C01;
+                        com_addresses_around[6] <= 17'h12C01;
+                        com_addresses_around[7] <= 17'h12C01;
+                        com_addresses_around[8] <= 17'h12C01;
                     end
                 end
             end
             case(inner_state) 
                 CALCULATE: begin
-                    inner_state <= CHECK;
+                    
                     // calculate address
-                    pixel_addr_forbram <= (hcount)*320 + vcount;
-                    pixel_yvalue <= {2'b00, y_pixel}; // save the pixel throughout a full loop
+                    
+                    if (curr_hcount != hcount || curr_vcount != vcount) begin // this means that we have received a new pixel 
+                        inner_state <= CHECK;
+                        pixel_yvalue <= {2'b00, y_pixel}; // save the pixel throughout a full loop
+                        curr_hcount <= hcount;
+                        curr_vcount <= vcount;
+                        pixel_addr_forbram <= (vcount)*320 + hcount;
+                    end
+                    
                     // read pixel for VGA -- this will happen in top level and be synced to this FSM
                     pixelread_forvga_valid <= 0;
                 end
                 CHECK: begin
-                    inner_state <= CALCULATE;
+                    inner_state <= WAIT1;
                     if (pixel_addr_forbram == com_addresses_around[0] || pixel_addr_forbram == com_addresses_around[1] || pixel_addr_forbram == com_addresses_around[2] || pixel_addr_forbram == com_addresses_around[3] || pixel_addr_forbram == com_addresses_around[4] || pixel_addr_forbram == com_addresses_around[5] || pixel_addr_forbram == com_addresses_around[6] || pixel_addr_forbram == com_addresses_around[7] || pixel_addr_forbram == com_addresses_around[8]) begin
                         address_in_com_flag <= 1;
                     end else begin
@@ -249,6 +264,7 @@ module compare (
                 STORE: begin
                     // pixel for BRAM is written in this state
                     inner_state <= WAIT2;
+                    valid_pixel_forbram <= 0;
                 end
                 WAIT2: begin
                     inner_state <= VGAREAD;

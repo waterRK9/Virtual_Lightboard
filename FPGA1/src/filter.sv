@@ -32,9 +32,7 @@ module filter (
     .vcount_out(vcount_buff)
     );
 
-  convolution #(
-    .K_SELECT(K_SELECT) )
-    mconv (
+  convolution mconv (
     .clk_in(clk_in),
     .rst_in(rst_in),
     .data_in(buffs),
