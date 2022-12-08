@@ -381,28 +381,19 @@ module top_level(
   // );
 
   // ethernet testing BRAM
-  xilinx_true_dual_port_read_first_2_clock_ram #(
-    .RAM_WIDTH(8),
-    .RAM_DEPTH(320*240))
-    frame_buffer (
+  fb frame_buffer (
     //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
     .addra(pixel_addr_porta_compare),
     .clka(clk_65mhz),
-    .wea(pixel_valid_porta_compare),
     .dina(pixel_in_porta_compare),
-    .ena(1'b1),
-    .regcea(1'b1),
-    .rsta(sys_rst),
     .douta(pixel_out_porta_compare),
-    //Read Side (65 MHz) -- FOR VGA
-    .addrb(pixel_addr_rbo [16:0]),
-    .dinb(8'b0),
+    .wea(pixel_valid_porta_compare)
+    //Read Side (50 MHz) -- FOR Ethernet
+    .addrb(pixel_addr_rbo[16:0]),
     .clkb(eth_refclk),
-    .web(1'b0), // never write using port B
-    .enb(1'b1),
-    .regceb(1'b1),
-    .rstb(sys_rst),
-    .doutb(pixel_out_portb)
+    .dinb(8'b0),
+    .doutb(pixel_out_portb),
+    .web(0)
   );
 
   //VGA COMPONENTS  
