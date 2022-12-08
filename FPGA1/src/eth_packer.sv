@@ -20,7 +20,7 @@ parameter PREAMBLE_DIBITS = 32; // 7 * 4
 parameter ADDR_DIBITS = 24 - 1; 
 parameter MIN_DATA_DIBITS = (320 * 4) - 1; //(320 * 4) - 1;
 parameter CRC_DIBITS = 16 - 1;
-parameter IFG_PERIOD = 200 -1; // Interpacket-Gap: standard minimum is time to send 96 bits (43 cycles)
+parameter IFG_PERIOD = 43 -1; // Interpacket-Gap: standard minimum is time to send 96 bits (43 cycles)
 parameter LEN_DIBITS = 8 - 1;
 
 logic [3:0] state;
