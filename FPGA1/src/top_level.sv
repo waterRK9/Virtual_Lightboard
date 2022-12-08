@@ -387,7 +387,7 @@ module top_level(
     .clka(clk_65mhz),
     .dina(pixel_in_porta_compare),
     .douta(pixel_out_porta_compare),
-    .wea(pixel_valid_porta_compare)
+    .wea(pixel_valid_porta_compare),
     //Read Side (50 MHz) -- FOR Ethernet
     .addrb(pixel_addr_rbo[16:0]),
     .clkb(eth_refclk),

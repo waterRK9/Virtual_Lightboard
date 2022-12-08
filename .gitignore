@@ -1,5 +1,3 @@
-
-sim/Untitled.rtf
-sim/Untitled.rtf
-sim/Untitled.rtf
-FPGA2/sim/Untitled.rtf
+*.vcd
+*.rpt
+*.DS_Store
