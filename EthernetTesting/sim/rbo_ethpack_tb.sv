@@ -26,6 +26,7 @@ module rbo_ethpack_tb;
     );
 
     eth_packer eth_packer (
+    .cancelled(0),
     .clk(clk),
     .rst(rst),
     .axiiv(rbo_axiov),
@@ -78,7 +79,7 @@ module rbo_ethpack_tb;
         //Test 1: Send header(56) + data(1280) + tail (16)
         // $display("cycle  txen  txd");
         // $display("Idle");
-        for (int i = 0; i < 10000; i = i + 1) begin
+        for (int i = 0; i < 1000; i = i + 1) begin
             if (!stall) begin
                 pixel = 8'b11111111; 
             end

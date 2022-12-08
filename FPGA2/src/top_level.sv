@@ -147,7 +147,7 @@ module top_level(
         .rsta(sys_rst),
         .douta(),
         //Read Side (65 MHz)
-        .addrb(pixel_addr_portb),
+        .addrb(pixel_addr_vga),
         .dinb(16'b0),
         .clkb(clk_65mhz),
         .web(1'b0),
@@ -259,28 +259,25 @@ module top_level(
 
     logic [31:0] seven_segment_controller_val_in;
     seven_segment_controller seven_segment_controller (
-        .clk_in(eth_refclk),
+        .clk_in(clk_65mhz),
         .rst_in(sys_rst),
         .val_in(seven_segment_controller_val_in),
         .cat_out({cg, cf, ce, cd, cc, cb, ca}),
         .an_out(an)
     );
 
-    logic old_firewall_axiov;
-    always_ff @(posedge eth_refclk) begin
+    logic [13:0] counter;
+    always_ff @(posedge clk_65mhz) begin
         if (sys_rst) begin
-            led[13:0] <= 0;
+            counter <= 0;
             seven_segment_controller_val_in <= 0;
+        end 
 
-        end else if (firewall_axiov & !old_firewall_axiov) begin
-            led[13:0] <= led[13:0] + 1;
-        end
+        if (hcount == 0 && vcount == 0 && counter < 16384) counter <= counter + 1;
+        else counter <= 0;
+        led[13:0] <= counter;
 
-        else if (aggregate_axiov) begin
-            seven_segment_controller_val_in <= aggregate_axiod;
-        end
-
-        old_firewall_axiov <= firewall_axiov;
+        seven_segment_controller_val_in <= {1'b0, counter , pixel_addr_vga};
     end
 
 endmodule

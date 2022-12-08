@@ -345,7 +345,7 @@ module top_level(
     .rsta(sys_rst),
     .douta(pixel_out_porta),
     //Read Side (50 MHz) -- FOR ETHERNET
-    .addrb(pixel_addr_rbo),
+    .addrb(pixel_addr_rbo[16:0]),
     .dinb(16'b0),
     .clkb(eth_refclk),
     .web(1'b0), // never write using port B
