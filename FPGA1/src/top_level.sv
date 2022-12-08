@@ -331,29 +331,29 @@ module top_level(
   //Data written on 16.67 MHz (From camera)
   //Data read on 65 MHz (start of video pipeline information)
   //Latency is 2 cycles.
-  // xilinx_true_dual_port_read_first_2_clock_ram #(
-  //   .RAM_WIDTH(8),
-  //   .RAM_DEPTH(320*240))
-  //   frame_buffer (
-  //   //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
-  //   .addra(pixel_addr_porta),
-  //   .clka(clk_65mhz),
-  //   .wea(pixel_valid_porta),
-  //   .dina(pixel_in_porta),
-  //   .ena(1'b1),
-  //   .regcea(1'b1),
-  //   .rsta(sys_rst),
-  //   .douta(pixel_out_porta),
-  //   //Read Side (50 MHz) -- FOR ETHERNET
-  //   .addrb(pixel_addr_portb),
-  //   .dinb(16'b0),
-  //   .clkb(clk_50mhz),
-  //   .web(1'b0), // never write using port B
-  //   .enb(1'b1),
-  //   .regceb(1'b1),
-  //   .rstb(sys_rst),
-  //   .doutb(pixel_out_portb)
-  // );
+  xilinx_true_dual_port_read_first_2_clock_ram #(
+    .RAM_WIDTH(8),
+    .RAM_DEPTH(320*240))
+    frame_buffer (
+    //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
+    .addra(pixel_addr_porta),
+    .clka(clk_65mhz),
+    .wea(pixel_valid_porta),
+    .dina(pixel_in_porta),
+    .ena(1'b1),
+    .regcea(1'b1),
+    .rsta(sys_rst),
+    .douta(pixel_out_porta),
+    //Read Side (50 MHz) -- FOR ETHERNET
+    .addrb(pixel_addr_rbo),
+    .dinb(16'b0),
+    .clkb(eth_refclk),
+    .web(1'b0), // never write using port B
+    .enb(1'b1),
+    .regceb(1'b1),
+    .rstb(sys_rst),
+    .doutb(pixel_out_portb)
+  );
 
   // //vga testing bram
   // xilinx_true_dual_port_read_first_2_clock_ram #(
@@ -381,20 +381,20 @@ module top_level(
   // );
 
   // ethernet testing BRAM
-  fb frame_buffer (
-    //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
-    .addra(pixel_addr_porta_compare),
-    .clka(clk_65mhz),
-    .dina(pixel_in_porta_compare),
-    .douta(pixel_out_porta_compare),
-    .wea(pixel_valid_porta_compare),
-    //Read Side (50 MHz) -- FOR Ethernet
-    .addrb(pixel_addr_rbo[16:0]),
-    .clkb(eth_refclk),
-    .dinb(8'b0),
-    .doutb(pixel_out_portb),
-    .web(0)
-  );
+  // fb frame_buffer (
+  //   //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
+  //   .addra(pixel_addr_porta_compare),
+  //   .clka(clk_65mhz),
+  //   .dina(pixel_in_porta_compare),
+  //   .douta(pixel_out_porta_compare),
+  //   .wea(pixel_valid_porta_compare),
+  //   //Read Side (50 MHz) -- FOR Ethernet
+  //   .addrb(pixel_addr_rbo[16:0]),
+  //   .clkb(eth_refclk),
+  //   .dinb(8'b0),
+  //   .doutb(pixel_out_portb),
+  //   .web(0)
+  // );
 
   //VGA COMPONENTS  
   //Generate VGA timing signals:
@@ -432,7 +432,7 @@ module top_level(
   scale2 scale2_m (
     .hcount_in(hcount),
     .vcount_in(vcount),
-    .frame_buff_in(pixel_out_portb),
+    .frame_buff_in(8'b0), //changed from portb_out for testing
     .cam_out(scaled_pixel_to_display)
   );
 
