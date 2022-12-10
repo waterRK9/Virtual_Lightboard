@@ -86,6 +86,7 @@ module top_level(
   logic [16:0] pixel_addr_portb;
   logic [15:0] pixel_out_porta;
   logic [7:0] pixel_out_portb;
+  logic [7:0] pixel_out_portb_vga;
   logic vgareadpixel;
   logic vgasndaddr;
 
@@ -105,7 +106,9 @@ module top_level(
   //VGA mux module output
   logic [11:0] mux_pixel;
 
-  
+  //Crosshair
+  logic crosshair;
+
 
   //PIPELINING:
   //pipelining vars
@@ -343,7 +346,7 @@ module top_level(
     .ena(1'b1),
     .regcea(1'b1),
     .rsta(sys_rst),
-    .douta(pixel_out_porta_compare),
+    .douta(),
     //Read Side (50 MHz) -- FOR ETHERNET
     .addrb(pixel_addr_rbo[16:0]),
     .dinb(16'b0),
@@ -355,30 +358,30 @@ module top_level(
     .doutb(pixel_out_portb)
   );
 
-  // //vga testing bram
-  // xilinx_true_dual_port_read_first_2_clock_ram #(
-  //   .RAM_WIDTH(8),
-  //   .RAM_DEPTH(320*240))
-  //   frame_buffer (
-  //   //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
-  //   .addra(pixel_addr_porta_compare),
-  //   .clka(clk_65mhz),
-  //   .wea(pixel_valid_porta_compare),
-  //   .dina(pixel_in_porta_compare),
-  //   .ena(1'b1),
-  //   .regcea(1'b1),
-  //   .rsta(sys_rst),
-  //   .douta(pixel_out_porta_compare),
-  //   //Read Side (65 MHz) -- FOR VGA
-  //   .addrb(pixel_addr_vga),
-  //   .dinb(16'b0),
-  //   .clkb(clk_65mhz),
-  //   .web(1'b0), // never write using port B
-  //   .enb(1'b1),
-  //   .regceb(1'b1),
-  //   .rstb(sys_rst),
-  //   .doutb(pixel_out_portb)
-  // );
+  //vga testing bram
+  xilinx_true_dual_port_read_first_2_clock_ram #(
+    .RAM_WIDTH(8),
+    .RAM_DEPTH(320*240))
+    frame_buffer_vga (
+    //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
+    .addra(pixel_addr_porta_compare),
+    .clka(clk_65mhz),
+    .wea(pixel_valid_porta_compare),
+    .dina(pixel_in_porta_compare),
+    .ena(1'b1),
+    .regcea(1'b1),
+    .rsta(sys_rst),
+    .douta(pixel_out_porta_compare),
+    //Read Side (65 MHz) -- FOR VGA
+    .addrb(pixel_addr_vga),
+    .dinb(16'b0),
+    .clkb(clk_65mhz),
+    .web(1'b0), // never write using port B
+    .enb(1'b1),
+    .regceb(1'b1),
+    .rstb(sys_rst),
+    .doutb(pixel_out_portb_vga)
+  );
 
   // ethernet testing BRAM
   // fb frame_buffer (
@@ -422,13 +425,17 @@ module top_level(
   scale2 scale2_m (
     .hcount_in(hcount),
     .vcount_in(vcount),
-    .frame_buff_in(8'b0), //changed from pixel_out_portb
+    .frame_buff_in(pixel_out_portb_vga), //changed from pixel_out_portb
     .cam_out(scaled_pixel_to_display)
   );
+
+  //CROSSHAIR:
+  assign crosshair = ((vcount_pipe[2]==y_com)||(hcount_pipe[2]==x_com));;
   
   //VGA mux
   vga_mux vga_mux_inst(
     .scaled_pixel_in(scaled_pixel_to_display),
+    .crosshair_in(crosshair),
     .pixel_out(mux_pixel)
   );
   //blanking logic.
