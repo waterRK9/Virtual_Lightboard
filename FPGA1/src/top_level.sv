@@ -336,14 +336,14 @@ module top_level(
     .RAM_DEPTH(320*240))
     frame_buffer (
     //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
-    .addra(pixel_addr_porta),
+    .addra(pixel_addr_porta_compare),
     .clka(clk_65mhz),
-    .wea(pixel_valid_porta),
-    .dina(pixel_in_porta),
+    .wea(pixel_valid_porta_compare),
+    .dina(pixel_in_porta_compare),
     .ena(1'b1),
     .regcea(1'b1),
     .rsta(sys_rst),
-    .douta(pixel_out_porta),
+    .douta(pixel_out_porta_compare),
     //Read Side (50 MHz) -- FOR ETHERNET
     .addrb(pixel_addr_rbo[16:0]),
     .dinb(16'b0),
@@ -407,16 +407,6 @@ module top_level(
     .blank_out(blank)
   );
 
-  // //MIRROR: 
-  // mirror mirror_m(
-  //   .clk_in(clk_65mhz),
-  //   .scale_in(2'b01),
-  //   .mirror_in(1'b1),
-  //   .hcount_in(hcount), 
-  //   .vcount_in(vcount),
-  //   .pixel_addr_out(pixel_addr_vga)
-  // );
-
   //MIRROR:
   // latency 2
   mirror2 mirror2_m(
@@ -427,27 +417,14 @@ module top_level(
     .pixel_addr_out(pixel_addr_vga)
   );
 
-  //Scale:
+  //SCALE:
   // latency 0
   scale2 scale2_m (
     .hcount_in(hcount),
     .vcount_in(vcount),
-    .frame_buff_in(8'b0), //changed from portb_out for testing
+    .frame_buff_in(8'b0), //changed from pixel_out_portb
     .cam_out(scaled_pixel_to_display)
   );
-
-  // //SCALE:
-  // //Based on hcount and vcount as well as scaling
-  // //gate the release of frame buffer information
-  // //Latency: 0
-  // scale scale_m(
-  //   .scale_in(2'b01),
-  //   .hcount_in(hcount_pipe[3]), 
-  //   .vcount_in(vcount_pipe[3]), 
-  //   .frame_buff_in(pixel_out_portb), //CHANGED THIS FOR TESTING!!
-  //   .cam_out(mux_pixel) //CHANGED FOR TESTING!!
-  // );
-  
   
   //VGA mux
   vga_mux vga_mux_inst(
@@ -475,7 +452,7 @@ module top_level(
   reverse_bit_order bit_order_reverser(
     .clk(eth_refclk),
     .rst(sys_rst),
-    .pixel(pixel_out_portb),
+    .pixel(pixel_out_portb), // changed from pixel_out_portb for testing
     .stall(stall), 
     .axiov(rbo_axiov), 
     .axiod(rbo_axiod), 
@@ -499,8 +476,8 @@ module top_level(
   aggregate aggregate (
     .clk(eth_refclk),
     .rst(sys_rst),
-    .axiiv(eth_txen),
-    .axiid(eth_txd),
+    .axiiv(rbo_axiov),
+    .axiid(rbo_axiod),
     .axiov(aggregate_axiov),
     .axiod(aggregate_axiod)
   );
