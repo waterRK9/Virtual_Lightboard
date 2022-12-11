@@ -80,11 +80,12 @@ module top_level(
   logic pixel_valid_porta_compare;
 
   //BRAM module input/output
-  logic [15:0] pixel_in_porta; //CHANGED FOR NOW
+  logic [7:0] pixel_in_porta;
   logic [16:0] pixel_addr_porta;
   logic pixel_valid_porta;
   logic [16:0] pixel_addr_portb;
-  logic [15:0] pixel_out_porta;
+  logic [7:0] pixel_out_porta;
+  logic [7:0] dummy_douta;
   logic [7:0] pixel_out_portb;
   logic [7:0] pixel_out_portb_vga;
   logic vgareadpixel;
@@ -304,7 +305,7 @@ module top_level(
   xilinx_true_dual_port_read_first_2_clock_ram #(
     .RAM_WIDTH(8),
     .RAM_DEPTH(320*240))
-    frame_buffer (
+    frame_buffer_ethernet (
     //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
     .addra(pixel_addr_porta_compare),
     .clka(clk_65mhz),
@@ -313,7 +314,7 @@ module top_level(
     .ena(1'b1),
     .regcea(1'b1),
     .rsta(sys_rst),
-    .douta(),
+    .douta(dummy_douta),
     //Read Side (50 MHz) -- FOR ETHERNET
     .addrb(pixel_addr_rbo[16:0]),
     .dinb(16'b0),
@@ -396,35 +397,32 @@ module top_level(
   assign vga_hs = ~hsync_pipe[2];  //TODO: needs to use pipelined signal (PS7)
   assign vga_vs = ~vsync_pipe[2];  //TODO: needs to use pipelined signal (PS7)
 
-  // test pixel generator for ethernet
-  logic [7:0] ethernet_pixel;
-  logic [23:0] prev_rbo_addr;
-  logic [8:0] counter;
-  logic black;
+  // // test pixel generator for ethernet
+  // logic [7:0] ethernet_pixel;
+  // logic [23:0] prev_rbo_addr;
+  // logic [16:0] counter;
+  // logic [1:0] color = 2'b00;
 
-  always_ff @(posedge eth_refclk) begin
-    prev_rbo_addr <= pixel_addr_rbo;
-    if (prev_rbo_addr != pixel_addr_rbo) begin
-      if (counter < 320) counter <= counter + 1;
-      else if (counter == 320) begin
-        counter <= 0;
-        if (black) begin
-          black <= 0;
-        end
-        else black <= 1;
-      end 
-    end
+  // always_ff @(posedge eth_refclk) begin
+  //   prev_rbo_addr <= pixel_addr_rbo;
+  //   if (prev_rbo_addr != pixel_addr_rbo) begin
+  //     if (counter < 19200) counter <= counter + 1;
+  //     else if (counter == 19200) begin
+  //       counter <= 0;
+  //       if (color < 3) begin
+  //         color <= color + 1;
+  //       end else begin
+  //         color <= 2'b00;
+  //       end
+  //     end 
+  //   end
     
-  end 
+  // end 
 
-  always_comb begin
-    if (black) begin
-      ethernet_pixel = 8'b00000000; // black color
-    end
-    else begin
-      ethernet_pixel = 8'b00111111; // white
-    end
-  end
+  // always_comb begin
+  //   ethernet_pixel = {6'b110000, color};
+  //   // yellow pink green red
+  // end
 
   //ETHERNET COMPONENTS:
   // logic between ethernet modules
@@ -436,7 +434,7 @@ module top_level(
   reverse_bit_order bit_order_reverser(
     .clk(eth_refclk),
     .rst(sys_rst),
-    .pixel(pixel_out_portb), // changed from pixel_out_portb for testing
+    .pixel(8'b11111111), // changed from pixel_out_portb for testing
     .stall(stall), 
     .axiov(rbo_axiov), 
     .axiod(rbo_axiod), 

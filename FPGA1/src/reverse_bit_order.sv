@@ -22,6 +22,8 @@ logic [8:0] audio_counter;
 
 logic[7:0] test_pixel;
 
+logic[5:0] row_counter;
+
 typedef enum {SendAddress, SendPixel, SendAudio} States;
 
 //try combinational output
@@ -48,6 +50,7 @@ always_comb begin
 
             SendPixel: begin
                 axiod = {pixel[1 + byte_bit_counter], pixel[byte_bit_counter]};
+                // axiod = {test_pixel[1 + byte_bit_counter], test_pixel[byte_bit_counter]};
             end
 
             SendAudio: begin
@@ -67,7 +70,8 @@ always_ff @(posedge clk) begin
         byte_bit_counter <= 8; //for timing, will reset to 0 upon returning to send address
         pixel_counter <= 0;
         audio_counter <= 0;
-        test_pixel <= 0;
+        // test_pixel <= 8'b11000000;
+        row_counter <= 0;
 
     end else if (!stall) begin
         case(state)
@@ -98,10 +102,10 @@ always_ff @(posedge clk) begin
             if (byte_bit_counter == 4) begin 
                 if (pixel_addr < 76800) begin
                     pixel_addr <= pixel_addr + 1;
-                    test_pixel <= ~test_pixel;
+                    // test_pixel <= ~test_pixel;
                 end else begin 
                     pixel_addr <= 0;
-                    test_pixel <= 0;
+                    // test_pixel <= 0;
                 end
             end
 
@@ -113,6 +117,13 @@ always_ff @(posedge clk) begin
             if (pixel_counter < 320) pixel_counter <= byte_bit_counter + 1;
             else begin
                 pixel_counter <= 0;
+                // // NEW LOGIC FOR TESTING
+                // if (row_counter < 60) row_counter <= row_counter + 1;
+                // else begin 
+                //     row_counter <= 0;
+                //     test_pixel <= test_pixel + 8'b00000001;
+                // end
+                // // END NEW LOGIC
                 state <= SendAudio;
             end
         end

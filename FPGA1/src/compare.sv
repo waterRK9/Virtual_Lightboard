@@ -29,14 +29,15 @@ module compare (
     localparam COMPARING = 2'b10;
 
     //state params (inner FSM)
-    localparam CALCULATE = 3'b000;
-    localparam CHECK = 3'b001;
-    localparam WAIT1 = 3'b010;
-    localparam RECEIVE = 3'b011;
-    localparam STORE = 3'b100;
-    localparam WAIT2 = 3'b101;
-    localparam VGAREAD = 3'b110;
-    localparam WAIT3 = 3'b111;
+    localparam CALCULATE = 4'b0000;
+    localparam CHECK = 4'b0001;
+    localparam WAIT1 = 4'b0010;
+    localparam RECEIVE = 4'b0011;
+    localparam STORE = 4'b0100;
+    localparam WAIT2 = 4'b0101;
+    localparam VGAREAD = 4'b0110;
+    localparam WAIT3 = 4'b0111;
+    localparam RESETTING = 4'b1000;
 
     //color params
     localparam YELLOW = 8'b11000000; // 11 is MSBs indicates that it is written on
@@ -71,10 +72,10 @@ module compare (
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
-            inner_state <= CALCULATE;
+            inner_state <= RESETTING;
             rst_flag <= 1;
-            hcount_reset <= hcount;
-            vcount_reset <= vcount;
+            // hcount_reset <= hcount;
+            // vcount_reset <= vcount;
             valid_pixel_forbram <= 0;
             curr_hcount <= 0;
             curr_vcount <= 0;
@@ -226,16 +227,16 @@ module compare (
                 // RESETTING: begin
                 //     if (rst_flag) begin
                 //         rst_flag <= 0;
-                //         reset_hcount <= hcount;
-                //         reset_vcount <= vcount;
+                //         hcount_reset <= hcount;
+                //         vcount_reset <= vcount;
                 //     end
-                //     valid_pixel_for_bram <= 1;
+                //     valid_pixel_forbram <= 1;
                 //     pixel_addr_forbram <= (vcount)*320 + hcount;
                 //     pixel_for_bram <= {2'b00, y_pixel};
-                //     if (hcount == reset_hcount && vcount == reset_vcount) begin // we have written in a whole screen of regular pixels
+                //     if (hcount == hcount_reset && vcount == vcount_reset) begin // we have written in a whole screen of regular pixels
                 //         inner_state <= CALCULATE;
-                //         reset_hcount <= 0;
-                //         reset_vcount <= 0;
+                //         hcount_reset <= 0;
+                //         vcount_reset <= 0;
                 //     end
                     
                 // end
