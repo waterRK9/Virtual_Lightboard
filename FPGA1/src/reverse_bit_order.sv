@@ -20,6 +20,8 @@ logic [3:0] byte_bit_counter;
 logic [8:0] pixel_counter;
 logic [8:0] audio_counter;
 
+logic[7:0] test_pixel;
+
 typedef enum {SendAddress, SendPixel, SendAudio} States;
 
 //try combinational output
@@ -65,6 +67,7 @@ always_ff @(posedge clk) begin
         byte_bit_counter <= 8; //for timing, will reset to 0 upon returning to send address
         pixel_counter <= 0;
         audio_counter <= 0;
+        test_pixel <= 0;
 
     end else if (!stall) begin
         case(state)
@@ -93,8 +96,13 @@ always_ff @(posedge clk) begin
             axiov <= 1;
             //switch to next pixel 2 cycles early to give BRAM time to change
             if (byte_bit_counter == 4) begin 
-                if (pixel_addr < 76800) pixel_addr <= pixel_addr + 1;
-                else pixel_addr <= 0;
+                if (pixel_addr < 76800) begin
+                    pixel_addr <= pixel_addr + 1;
+                    test_pixel <= ~test_pixel;
+                end else begin 
+                    pixel_addr <= 0;
+                    test_pixel <= 0;
+                end
             end
 
             // cycles the byte counter every 8 bits
