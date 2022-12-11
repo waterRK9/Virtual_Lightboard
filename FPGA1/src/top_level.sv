@@ -396,6 +396,36 @@ module top_level(
   assign vga_hs = ~hsync_pipe[2];  //TODO: needs to use pipelined signal (PS7)
   assign vga_vs = ~vsync_pipe[2];  //TODO: needs to use pipelined signal (PS7)
 
+  // test pixel generator for ethernet
+  logic [7:0] ethernet_pixel;
+  logic [23:0] prev_rbo_addr;
+  logic [8:0] counter;
+  logic black;
+
+  always_ff @(posedge eth_refclk) begin
+    prev_rbo_addr <= pixel_addr_rbo;
+    if (prev_rbo_addr != pixel_addr_rbo) begin
+      if (counter < 320) counter <= counter + 1;
+      else if (counter == 320) begin
+        counter <= 0;
+        if (black) begin
+          black <= 0;
+        end
+        else black <= 1;
+      end 
+    end
+    
+  end 
+
+  always_comb begin
+    if (black) begin
+      ethernet_pixel = 8'b00000000; // black color
+    end
+    else begin
+      ethernet_pixel = 8'b00111111; // white
+    end
+  end
+
   //ETHERNET COMPONENTS:
   // logic between ethernet modules
   logic stall;

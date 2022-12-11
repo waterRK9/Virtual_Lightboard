@@ -45,8 +45,8 @@ module compare (
     localparam RED = 8'b11000011;
 
     //for drawing threshold and crosshair
-    localparam THRESHOLD_PIXEL = 8'b10000000;
-    localparam CROSSHAIR_PIXEL = 8'b01000000;
+    localparam THRESHOLD_PIXEL = 2'b10;
+    localparam CROSSHAIR_PIXEL = 2'b01;
     
     logic [1:0] outer_state;
     logic [2:0] inner_state;
@@ -64,6 +64,10 @@ module compare (
 
     logic crosshair;
     assign crosshair = ((hcount == x_com_in) || (vcount == y_com_in));
+
+    logic rst_flag;
+    logic [10:0] hcount_reset;
+    logic [9:0] vcount_reset;
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
@@ -219,22 +223,22 @@ module compare (
                 rst_flag <= 0;
             end
             case(inner_state) 
-                RESETTING: begin
-                    if (rst_flag) begin
-                        rst_flag <= 0;
-                        reset_hcount <= hcount;
-                        reset_vcount <= vcount;
-                    end
-                    valid_pixel_for_bram <= 1;
-                    pixel_addr_forbram <= (vcount)*320 + hcount;
-                    pixel_for_bram <= {2'b00, y_pixel};
-                    if (hcount == reset_hcount && vcount == reset_vcount) begin // we have written in a whole screen of regular pixels
-                        inner_state <= CALCULATE;
-                        reset_hcount <= 0;
-                        reset_vcount <= 0;
-                    end
+                // RESETTING: begin
+                //     if (rst_flag) begin
+                //         rst_flag <= 0;
+                //         reset_hcount <= hcount;
+                //         reset_vcount <= vcount;
+                //     end
+                //     valid_pixel_for_bram <= 1;
+                //     pixel_addr_forbram <= (vcount)*320 + hcount;
+                //     pixel_for_bram <= {2'b00, y_pixel};
+                //     if (hcount == reset_hcount && vcount == reset_vcount) begin // we have written in a whole screen of regular pixels
+                //         inner_state <= CALCULATE;
+                //         reset_hcount <= 0;
+                //         reset_vcount <= 0;
+                //     end
                     
-                end
+                // end
 
                 CALCULATE: begin
                     
@@ -265,7 +269,8 @@ module compare (
                 RECEIVE: begin
                     inner_state <= STORE;
                     if (rst_flag) begin
-                        
+                        valid_pixel_forbram <= 1;
+                        pixel_for_bram <= pixel_yvalue;
                     end else if (write_erase_select == 0) begin // write mode
                         if (pixel_from_bram[7:6] == 2'b11) begin // colored pixel - don't write over it!
                             valid_pixel_forbram <= 0; 
@@ -290,14 +295,14 @@ module compare (
                                 endcase
                             end
                             else begin // write regular pixel
-                                pixel_for_bram <= (threshold_in == 1)? THRESHOLD_PIXEL: (crosshair == 1)? CROSSHAIR_PIXEL: pixel_yvalue;
+                                pixel_for_bram <= (threshold_in == 1)? {THRESHOLD_PIXEL, pixel_yvalue[5:0]}: (crosshair == 1)? {CROSSHAIR_PIXEL, pixel_yvalue[5:0]}: pixel_yvalue;
                             end
                         end
                     end else begin // erase mode
                         if (pixel_from_bram[7:6] == 2'b11) begin // colored pixel, either erase it or leave it
                             if (threshold_in == 1) begin // erase it
                                 valid_pixel_forbram <= 1;
-                                pixel_for_bram <= (threshold_in == 1)? THRESHOLD_PIXEL: (crosshair == 1)? CROSSHAIR_PIXEL: pixel_yvalue;
+                                pixel_for_bram <= (threshold_in == 1)? {THRESHOLD_PIXEL, pixel_yvalue[5:0]}: (crosshair == 1)? {CROSSHAIR_PIXEL, pixel_yvalue[5:0]}: pixel_yvalue;
                             end
                             else begin // leave it
                                 valid_pixel_forbram <= 0;
@@ -306,7 +311,7 @@ module compare (
                         end
                         else begin // write regular pixel
                             valid_pixel_forbram <= 1;
-                            pixel_for_bram <= (threshold_in == 1)? THRESHOLD_PIXEL: (crosshair == 1)? CROSSHAIR_PIXEL: pixel_yvalue;
+                            pixel_for_bram <= (threshold_in == 1)? {THRESHOLD_PIXEL, pixel_yvalue[5:0]}: (crosshair == 1)? {CROSSHAIR_PIXEL, pixel_yvalue[5:0]}: pixel_yvalue;
                         end
                     end
                 end
