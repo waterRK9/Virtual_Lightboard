@@ -68,6 +68,9 @@ module compare (
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
             inner_state <= CALCULATE;
+            rst_flag <= 1;
+            hcount_reset <= hcount;
+            vcount_reset <= vcount;
             valid_pixel_forbram <= 0;
             curr_hcount <= 0;
             curr_vcount <= 0;
@@ -212,8 +215,27 @@ module compare (
                     end
                 end
             end
+            if (hcount_reset == hcount && vcount_reset == vcount) begin
+                rst_flag <= 0;
+            end
             case(inner_state) 
-                
+                RESETTING: begin
+                    if (rst_flag) begin
+                        rst_flag <= 0;
+                        reset_hcount <= hcount;
+                        reset_vcount <= vcount;
+                    end
+                    valid_pixel_for_bram <= 1;
+                    pixel_addr_forbram <= (vcount)*320 + hcount;
+                    pixel_for_bram <= {2'b00, y_pixel};
+                    if (hcount == reset_hcount && vcount == reset_vcount) begin // we have written in a whole screen of regular pixels
+                        inner_state <= CALCULATE;
+                        reset_hcount <= 0;
+                        reset_vcount <= 0;
+                    end
+                    
+                end
+
                 CALCULATE: begin
                     
                     // calculate address
@@ -242,7 +264,9 @@ module compare (
                 end
                 RECEIVE: begin
                     inner_state <= STORE;
-                    if (write_erase_select == 0) begin // write mode
+                    if (rst_flag) begin
+                        
+                    end else if (write_erase_select == 0) begin // write mode
                         if (pixel_from_bram[7:6] == 2'b11) begin // colored pixel - don't write over it!
                             valid_pixel_forbram <= 0; 
                             pixel_for_bram <= pixel_from_bram;
