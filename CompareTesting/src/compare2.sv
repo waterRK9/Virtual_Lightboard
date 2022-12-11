@@ -12,6 +12,7 @@ module compare2 (
                 input wire [10:0] hcount, // from filter
                 input wire [9:0]  vcount, // from filter 
                 input wire [5:0] y_pixel, // from rgb_to_ycrcb
+                input wire threshold_in,
                 input wire [1:0] color_select, // from switches, routed in toplevel
                 input wire write_erase_select, // from switches, routed in toplevel
                 input wire [7:0] pixel_from_bram, // current pixel at that spot in BRAM
@@ -36,6 +37,10 @@ module compare2 (
     localparam GREEN = 8'b11000010;
     localparam RED = 8'b11000011;
 
+    //for drawing threshold and crosshair
+    localparam THRESHOLD_PIXEL = 8'b10000000;
+    localparam CROSSHAIR_PIXEL = 8'b01000000;
+
     logic [2:0] inner_state;
 
     logic [10:0] x_com_current;
@@ -48,6 +53,9 @@ module compare2 (
     logic [10:0] curr_hcount;
     logic [9:0] curr_vcount;
     logic [7:0] pixel_yvalue;
+
+    logic crosshair;
+    assign crosshair = ((hcount == x_com_in) || (vcount == y_com_in));
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
@@ -228,7 +236,7 @@ module compare2 (
                                 endcase
                             end
                             else begin // write regular pixel
-                                pixel_for_bram <= pixel_yvalue;
+                                pixel_for_bram <= (threshold_in == 1)? THRESHOLD_PIXEL: (crosshair == 1)? CROSSHAIR_PIXEL: pixel_yvalue;
                             end
                         end
                     end else begin // erase mode

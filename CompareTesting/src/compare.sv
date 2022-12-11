@@ -1,9 +1,7 @@
-// COMPARE MODULE w/o VGA pixel counter integration
-
 `timescale 1ns / 1ps
 `default_nettype none
 
-module compare2 (
+module compare (
                 input wire clk_in,
                 input wire rst_in,
                 input wire [10:0] x_com_in, // from COM module
@@ -15,10 +13,20 @@ module compare2 (
                 input wire [1:0] color_select, // from switches, routed in toplevel
                 input wire write_erase_select, // from switches, routed in toplevel
                 input wire [7:0] pixel_from_bram, // current pixel at that spot in BRAM
+                input wire threshold_in,
+                //output logic [16:0] pixel_addr_bram_check,
                 output logic [7:0] pixel_for_bram, // pixel to write into the BRAM
                 output logic [16:0] pixel_addr_forbram, // either the pixel that we want to check or the pixel that we want to store (depends on valid signal)
-                output logic valid_pixel_forbram
+                output logic valid_pixel_forbram,
+                //output logic [7:0] pixel_out_forvga,
+                output logic pixelread_forvga_valid, // tells vga to read output of BRAM request because it is ready
+                output logic pixeladdr_forvga_valid // tells vga to send address to read
             );
+
+    //state params (outer FSM)
+    localparam RESTING = 2'b00;
+    localparam COM_RECEIVED = 2'b01;
+    localparam COMPARING = 2'b10;
 
     //state params (inner FSM)
     localparam CALCULATE = 3'b000;
@@ -36,18 +44,26 @@ module compare2 (
     localparam GREEN = 8'b11000010;
     localparam RED = 8'b11000011;
 
+    //for drawing threshold and crosshair
+    localparam THRESHOLD_PIXEL = 8'b10000000;
+    localparam CROSSHAIR_PIXEL = 8'b01000000;
+    
+    logic [1:0] outer_state;
     logic [2:0] inner_state;
 
     logic [10:0] x_com_current;
     logic [9:0] y_com_current;
     logic [16:0] com_address;
-    logic [8:0] com_addresses_around [16:0];
+    logic [8:0][16:0] com_addresses_around;
     logic com_received_flag;
     logic address_in_com_flag;
 
     logic [10:0] curr_hcount;
     logic [9:0] curr_vcount;
     logic [7:0] pixel_yvalue;
+
+    logic crosshair;
+    assign crosshair = ((hcount == x_com_in) || (vcount == y_com_in));
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
@@ -182,7 +198,9 @@ module compare2 (
             end
             case(inner_state) 
                 CALCULATE: begin
+                    
                     // calculate address
+                    
                     if (curr_hcount != hcount || curr_vcount != vcount) begin // this means that we have received a new pixel 
                         inner_state <= CHECK;
                         pixel_yvalue <= {2'b00, y_pixel}; // save the pixel throughout a full loop
@@ -190,8 +208,11 @@ module compare2 (
                         curr_vcount <= vcount;
                         pixel_addr_forbram <= (vcount)*320 + hcount;
                     end
+                    
+                    // read pixel for VGA -- this will happen in top level and be synced to this FSM
+                    pixelread_forvga_valid <= 0;
                 end
-                CHECK: begin // checks if address in COM
+                CHECK: begin
                     inner_state <= WAIT1;
                     if (pixel_addr_forbram == com_addresses_around[0] || pixel_addr_forbram == com_addresses_around[1] || pixel_addr_forbram == com_addresses_around[2] || pixel_addr_forbram == com_addresses_around[3] || pixel_addr_forbram == com_addresses_around[4] || pixel_addr_forbram == com_addresses_around[5] || pixel_addr_forbram == com_addresses_around[6] || pixel_addr_forbram == com_addresses_around[7] || pixel_addr_forbram == com_addresses_around[8]) begin
                         address_in_com_flag <= 1;
@@ -209,7 +230,7 @@ module compare2 (
                             valid_pixel_forbram <= 0; 
                             pixel_for_bram <= pixel_from_bram;
                         end
-                        else begin // want to write in the BRAM
+                        else begin
                             valid_pixel_forbram <= 1;
                             if (address_in_com_flag) begin // write colored pixel
                                 case (color_select)
@@ -228,7 +249,7 @@ module compare2 (
                                 endcase
                             end
                             else begin // write regular pixel
-                                pixel_for_bram <= pixel_yvalue;
+                                pixel_for_bram <= (threshold_in == 1)? THRESHOLD_PIXEL: (crosshair == 1)? CROSSHAIR_PIXEL: pixel_yvalue;
                             end
                         end
                     end else begin // erase mode
@@ -250,8 +271,20 @@ module compare2 (
                 end
                 STORE: begin
                     // pixel for BRAM is written in this state
-                    inner_state <= CALCULATE;
+                    inner_state <= WAIT2;
                     valid_pixel_forbram <= 0;
+                end
+                WAIT2: begin
+                    inner_state <= VGAREAD;
+                    pixeladdr_forvga_valid <= 1;
+                end
+                VGAREAD: begin
+                    inner_state <= WAIT3;
+                    pixeladdr_forvga_valid <= 0;
+                end
+                WAIT3: begin
+                    inner_state <= CALCULATE;
+                    pixelread_forvga_valid <= 1; // tells vga module to read the pixel for the VGA
                 end
             endcase        
         end
