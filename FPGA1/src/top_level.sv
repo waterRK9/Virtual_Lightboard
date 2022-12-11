@@ -106,9 +106,6 @@ module top_level(
   //VGA mux module output
   logic [11:0] mux_pixel;
 
-  //Crosshair
-  logic crosshair;
-
 
   //PIPELINING:
   //pipelining vars
@@ -288,6 +285,7 @@ module top_level(
     .hcount(hcount_rec_pipe[2]), //PIPELINE: 3 cycle latency
     .vcount(vcount_rec_pipe[2]), //PIPELINE: 3 cycle latency
     .y_pixel(y[9:4]), //PIPELINE: from rgb_to_ycrcb
+    .threshold_in(mask),
     .color_select(sw[2:1]),
     .write_erase_select(sw[0]),
     .pixel_from_bram(pixel_out_porta_compare), // current pixel from BRAM for comparison
@@ -297,37 +295,6 @@ module top_level(
     .pixelread_forvga_valid(vgareadpixel),
     .pixeladdr_forvga_valid(vgasndaddr)
   );
-
-  //BRAM MANAGER: combinational logic to handle what is wired to BRAM
-  // always_comb begin
-  //   if (vgasndaddr == 1 || vgareadpixel == 1) begin
-  //     pixel_addr_porta = pixel_addr_vga; // TODO: use this pixel in vga
-  //     pixel_valid_porta = 0;
-  //     pixel_in_porta = 8'b0;
-  //     pixel_out_vga = pixel_out_porta; // TODO: use this pixel in vga
-  //   end
-  //   else begin
-  //     pixel_addr_porta = pixel_addr_porta_compare;
-  //     pixel_valid_porta = pixel_valid_porta_compare;
-  //     pixel_in_porta = pixel_in_porta_compare;
-  //     pixel_out_porta_compare = pixel_out_porta;
-  //   end
-  // end
-
-  // always_comb begin
-  //   if (vgasndaddr == 1 || vgareadpixel == 1) begin
-  //     pixel_addr_porta = pixel_addr_vga; // TODO: use this pixel in vga
-  //     pixel_valid_porta = 0;
-  //     pixel_in_porta = 16'b0; // CHANGED FOR NOW
-  //     pixel_out_vga = pixel_out_porta; // TODO: use this pixel in vga
-  //   end
-  //   else begin
-  //     pixel_addr_porta = (320*vcount_rec) + hcount_rec;
-  //     pixel_valid_porta = data_valid_rec;
-  //     pixel_in_porta = pixel_data_rec;
-  //     pixel_out_porta_compare = pixel_out_porta[7:0]; //changed for now
-  //   end
-  // end
   
   //FRAME BUFFER FOR IMAGE + WRITING
   //Two Clock Frame Buffer:
@@ -383,22 +350,6 @@ module top_level(
     .doutb(pixel_out_portb_vga)
   );
 
-  // ethernet testing BRAM
-  // fb frame_buffer (
-  //   //Write Side (65MHz) -- FOR FPGA 1 COMPARE AND VGA
-  //   .addra(pixel_addr_porta_compare),
-  //   .clka(clk_65mhz),
-  //   .dina(pixel_in_porta_compare),
-  //   .douta(pixel_out_porta_compare),
-  //   .wea(pixel_valid_porta_compare),
-  //   //Read Side (50 MHz) -- FOR Ethernet
-  //   .addrb(pixel_addr_rbo[16:0]),
-  //   .clkb(eth_refclk),
-  //   .dinb(8'b0),
-  //   .doutb(pixel_out_portb),
-  //   .web(0)
-  // );
-
   //VGA COMPONENTS  
   //Generate VGA timing signals:
   vga vga_gen(
@@ -428,14 +379,10 @@ module top_level(
     .frame_buff_in(pixel_out_portb_vga), //changed from pixel_out_portb
     .cam_out(scaled_pixel_to_display)
   );
-
-  //CROSSHAIR:
-  assign crosshair = ((vcount_pipe[2]==y_com)||(hcount_pipe[2]==x_com));;
   
   //VGA mux
   vga_mux vga_mux_inst(
     .scaled_pixel_in(scaled_pixel_to_display),
-    .crosshair_in(crosshair),
     .pixel_out(mux_pixel)
   );
   //blanking logic.
@@ -467,7 +414,7 @@ module top_level(
   );
 
   eth_packer packer(
-    .cancelled(flip),
+    .cancelled(1'b0),
     .clk(eth_refclk),
     .rst(sys_rst),
     .axiiv(rbo_axiov), 

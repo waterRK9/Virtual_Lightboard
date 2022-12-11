@@ -254,8 +254,6 @@ module top_level(
     .valid_com(new_com)
   );
 
-  
-
   //COMPARE: 
   compare comparer(
     .clk_in(clk_65mhz),

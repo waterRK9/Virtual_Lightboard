@@ -13,6 +13,7 @@ module compare (
                 input wire [1:0] color_select, // from switches, routed in toplevel
                 input wire write_erase_select, // from switches, routed in toplevel
                 input wire [7:0] pixel_from_bram, // current pixel at that spot in BRAM
+                input wire threshold_in,
                 //output logic [16:0] pixel_addr_bram_check,
                 output logic [7:0] pixel_for_bram, // pixel to write into the BRAM
                 output logic [16:0] pixel_addr_forbram, // either the pixel that we want to check or the pixel that we want to store (depends on valid signal)
@@ -42,6 +43,10 @@ module compare (
     localparam PINK = 8'b11000001;
     localparam GREEN = 8'b11000010;
     localparam RED = 8'b11000011;
+
+    //for drawing threshold and crosshair
+    localparam THRESHOLD_PIXEL = 8'b10000000;
+    localparam CROSSHAIR_PIXEL = 8'b01000000;
     
     logic [1:0] outer_state;
     logic [2:0] inner_state;
@@ -56,6 +61,9 @@ module compare (
     logic [10:0] curr_hcount;
     logic [9:0] curr_vcount;
     logic [7:0] pixel_yvalue;
+
+    logic crosshair;
+    assign crosshair = ((hcount == x_com_in) || (vcount == y_com_in));
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
@@ -74,6 +82,22 @@ module compare (
             com_addresses_around[6] <= 0;
             com_addresses_around[7] <= 0;
             com_addresses_around[8] <= 0;
+            // com_addresses_around[9] <= 0;
+            // com_addresses_around[10] <= 0;
+            // com_addresses_around[11] <= 0;
+            // com_addresses_around[12] <= 0;
+            // com_addresses_around[13] <= 0;
+            // com_addresses_around[14] <= 0;
+            // com_addresses_around[15] <= 0;
+            // com_addresses_around[16] <= 0;
+            // com_addresses_around[17] <= 0;
+            // com_addresses_around[18] <= 0;
+            // com_addresses_around[19] <= 0;
+            // com_addresses_around[20] <= 0;
+            // com_addresses_around[21] <= 0;
+            // com_addresses_around[22] <= 0;
+            // com_addresses_around[23] <= 0;
+            // com_addresses_around[24] <= 0;
         end
         else begin
             if (com_valid_in) begin // new COM received, need to calculate with the new one instead -- not sure about this?
@@ -189,6 +213,7 @@ module compare (
                 end
             end
             case(inner_state) 
+                
                 CALCULATE: begin
                     
                     // calculate address
@@ -241,14 +266,14 @@ module compare (
                                 endcase
                             end
                             else begin // write regular pixel
-                                pixel_for_bram <= pixel_yvalue;
+                                pixel_for_bram <= (threshold_in == 1)? THRESHOLD_PIXEL: (crosshair == 1)? CROSSHAIR_PIXEL: pixel_yvalue;
                             end
                         end
                     end else begin // erase mode
                         if (pixel_from_bram[7:6] == 2'b11) begin // colored pixel, either erase it or leave it
-                            if (address_in_com_flag) begin // erase it
+                            if (threshold_in == 1) begin // erase it
                                 valid_pixel_forbram <= 1;
-                                pixel_for_bram <= pixel_yvalue;
+                                pixel_for_bram <= (threshold_in == 1)? THRESHOLD_PIXEL: (crosshair == 1)? CROSSHAIR_PIXEL: pixel_yvalue;
                             end
                             else begin // leave it
                                 valid_pixel_forbram <= 0;
@@ -257,7 +282,7 @@ module compare (
                         end
                         else begin // write regular pixel
                             valid_pixel_forbram <= 1;
-                            pixel_for_bram <= pixel_yvalue;
+                            pixel_for_bram <= (threshold_in == 1)? THRESHOLD_PIXEL: (crosshair == 1)? CROSSHAIR_PIXEL: pixel_yvalue;
                         end
                     end
                 end
