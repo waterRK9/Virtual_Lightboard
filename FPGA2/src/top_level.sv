@@ -280,6 +280,33 @@ module top_level(
         seven_segment_controller_val_in <= {1'b0, counter , pixel_addr_vga};
     end
 
+    ila_0 il (
+        .clk(clk),
+        .probe0(eth_refclk),  
+        .probe1(addr_written), 
+        .probe2(pixel_written), 
+        .probe3(pixel_write_enable),  
+
+        .probe4(clk_65mhz),
+        .probe5(pixel_addr_vga),
+        .probe6(pixel_out_portb),
+        .probe7(hcount),
+        .probe8(vcount)
+    );
+
 endmodule
 
 `default_nettype wire
+
+// ila planning
+
+//eth clk
+// addr_written 17
+// pixel_written 8
+// pixel_write_enable 1
+
+//vga clk
+//pixel_addr_vga 17
+//pixel_out_portb 8
+//hcount 11
+//vount 10
