@@ -15,11 +15,86 @@ module image_audio_splitter_tb;
     logic [7:0] ias_pixel_out;
     logic [7:0] ias_audio_out;
 
+    logic [7:0] pixel;
+    logic stall;
+
+    logic rbo_axiov;
+    logic [1:0] rbo_axiod;
+    logic [23:0] rbo_pixel_addr;
+
+    logic phy_txen;
+    logic [1:0] phy_txd;
+
+    reverse_bit_order reverse_bit_order (
+    .clk(clk),
+    .rst(rst),
+    .pixel(pixel),
+    .stall(stall),
+    .axiov(rbo_axiov), 
+    .axiod(rbo_axiod),
+    .pixel_addr(rbo_pixel_addr)
+    );
+
+    eth_packer eth_packer (
+    .cancelled(1'b0),
+    .clk(clk),
+    .rst(rst),
+    .axiiv(rbo_axiov),
+    .axiid(rbo_axiod),
+    .stall(stall),
+    .phy_txen(phy_txen),
+    .phy_txd(phy_txd)
+    );
+
+    logic ether_axiov;
+    logic [1:0] ether_axiod;
+    ether uut (
+        .clk(clk),
+        .rst(rst),
+        .rxd(phy_txd),
+        .crsdv(phy_txen),
+        .axiov(ether_axiov),
+        .axiod(ether_axiod)
+        );
+
+    logic bitorder_axiov;
+    logic [1:0] bitorder_axiod;
+    bitorder bitorder (
+        .clk(clk),
+        .rst(rst),
+        .axiiv(ether_axiov),
+        .axiid(ether_axiod),
+        .axiov(bitorder_axiov), 
+        .axiod(bitorder_axiod)
+    );
+
+    logic kill, done;
+
+    cksum cksum (
+    .clk(clk),
+    .rst(rst),
+    .axiiv(ether_axiov),
+    .axiid({ether_axiod}),
+    .done(done), 
+    .kill(kill)
+    );
+
+    logic firewall_axiov;
+    logic [1:0] firewall_axiod;
+    firewall firewall (
+    .clk(clk),
+    .rst(rst),
+    .axiid(bitorder_axiod),
+    .axiiv(bitorder_axiov),
+    .axiov(firewall_axiov), 
+    .axiod(firewall_axiod)
+    );
+
     image_audio_splitter image_audio_splitter (
     .clk(clk),
     .rst(rst),
-    .axiiv(axiiv),
-    .axiid(axiid),
+    .axiiv(firewall_axiov),
+    .axiid(firewall_axiod),
 
     .addr_axiov(ias_addr_axiov),
     .pixel_axiov(ias_pixel_axiov),
@@ -48,9 +123,11 @@ module image_audio_splitter_tb;
     );
 
     always begin
-    #10;
-    clk = !clk;
+        #10;
+        clk = !clk;
     end
+
+    logic [23:0] old_rbo_pixel_addr;
 
     initial begin
         $dumpfile("obj/image_audio_splitter.vcd");
@@ -64,55 +141,11 @@ module image_audio_splitter_tb;
         rst = 0;
         #10
         
-        //Test 1: outputting addr, and pixels correctly
-        for (int i = 0; i < 12; i = i + 1) begin //sending address
-            axiiv = 1'b1;
-            axiid = 2'b01;
+        pixel = 8'b00011011;
+        for (int i = 0; i < 1000; i = i + 1) begin
             #20;
-        end
-        if (!ias_addr_axiov || ias_addr_out != 24'h555555) $display("Test1: Error in addr");
-        else $display("Test1: addr looks good!");
-        for (int i = 0; i < 4; i = i + 1) begin //2 pixels back to back
-            axiiv = 1'b1;
-            axiid = i;
-            #20;
-        end
-        for (int i = 0; i < 4; i = i + 1) begin 
-            axiiv = 1'b1;
-            axiid = i;
-            #20;
-        end
-        if (!ias_pixel_axiov || ias_pixel_out != 8'b11100100) $display("Test2: Error in pixel"); //I should really check both pixels here
-        else $display("Test2: pixel looks good!");
-
-        // rst = 1;
-        axiiv = 1'b0;
-        #80;
-        axiiv = 1'b1;
-        // rst = 0;
-
-        //Test 2: start packet + interuption + new packet
-        for (int i = 0; i < 12; i = i + 1) begin
-            axiiv = 1'b1;
-            axiid = 2'b01;
-            #20;
-        end
-        for (int i = 0; i < 7; i = i + 1) begin 
-            axiiv = 1'b1;
-            axiid = i;
-            #20;
-        end
-        axiiv = 1'b0;
-        #20;
-        for (int i = 0; i < 12; i = i + 1) begin
-            axiiv = 1'b1;
-            axiid = 2'b10;
-            #20;
-        end
-        for (int i = 0; i < 8; i = i + 1) begin 
-            axiiv = 1'b1;
-            axiid = i;
-            #20;
+            if (old_rbo_pixel_addr != rbo_pixel_addr) pixel <= pixel;
+            old_rbo_pixel_addr <= rbo_pixel_addr;
         end
 
         #40;

@@ -42,14 +42,14 @@ always_ff @(posedge clk) begin
         case(state)
         RecieveAddr: begin
             if (output_counter <= 6) begin //0, 2, 4, 6
-                addr[17+byte_bit_counter] <= axiid[1];
-                addr[16+byte_bit_counter] <= axiid[0];
+                addr[24-byte_bit_counter] <= axiid[1];
+                addr[23-byte_bit_counter] <= axiid[0];
             end else if (output_counter <= 14) begin //8, 10, 12, 14
-                addr[9+byte_bit_counter] <= axiid[1];
-                addr[8+byte_bit_counter] <= axiid[0];  
+                addr[15-byte_bit_counter] <= axiid[1];
+                addr[14-byte_bit_counter] <= axiid[0];  
             end else if (output_counter <= 22) begin // 16, 18, 20, 22
-                addr[1+byte_bit_counter] <= axiid[1];
-                addr[byte_bit_counter] <= axiid[0];
+                addr[7-byte_bit_counter] <= axiid[1];
+                addr[6-byte_bit_counter] <= axiid[0];
             end 
 
             if (output_counter < 22) output_counter <= output_counter + 2;
@@ -65,7 +65,7 @@ always_ff @(posedge clk) begin
             if (byte_bit_counter == 6) pixel_axiov <= 1;
             else pixel_axiov <= 0;
 
-            pixel <= {axiid, pixel[7:2]};
+            pixel <= {pixel[5:0], axiid};
 
             if (output_counter < 320) output_counter <= output_counter + 1;
             else begin
@@ -82,7 +82,7 @@ always_ff @(posedge clk) begin
             if (byte_bit_counter == 6) audio_axiov <= 1;
             else audio_axiov <= 0;
 
-            audio <= {axiid, audio[7:2]};
+            audio <= {audio[7:2], axiid};
         end
         endcase
     end else begin

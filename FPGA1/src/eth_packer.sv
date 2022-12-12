@@ -17,11 +17,19 @@ parameter DEST_ADDR_DIBIT = 2'b11;
 parameter SOURCE_ADDR = 48'h69695A065491; //note: flip to MSB/ LSb order if using
 
 parameter PREAMBLE_DIBITS = 32; // 7 * 4
+<<<<<<< Updated upstream
 parameter ADDR_DIBITS = 24; 
 parameter MIN_DATA_DIBITS = (320 * 4); //(320 * 4) - 1;
 parameter CRC_DIBITS = 16;
 parameter IFG_PERIOD = 43; // Interpacket-Gap: standard minimum is time to send 96 bits (43 cycles)
 parameter LEN_DIBITS = 8 ;
+=======
+parameter ADDR_DIBITS = 24 - 1; 
+parameter MIN_DATA_DIBITS = 24 - 1; //(320 * 4) - 1;
+parameter CRC_DIBITS = 16 - 1;
+parameter IFG_PERIOD = 48 -1; // Interpacket-Gap: standard minimum is time to send 96 bits (43 cycles)
+parameter LEN_DIBITS = 8 - 1;
+>>>>>>> Stashed changes
 
 logic [3:0] state;
 
@@ -216,24 +224,24 @@ always_ff @(posedge clk) begin
                     dibit_counter <= dibit_counter + 1;
                 end else begin
                     dibit_counter <= 0;
-                    state <= SendTail;
+                    state <= Idle;
                     $display("Sending Tail Now");
                     byte_bit_counter <= 0;
                 end
             end
-            SendTail: begin
-                if (byte_bit_counter == 6) byte_bit_counter <= 0;
-                else byte_bit_counter <= byte_bit_counter + 2;
+            // SendTail: begin
+            //     if (byte_bit_counter == 6) byte_bit_counter <= 0;
+            //     else byte_bit_counter <= byte_bit_counter + 2;
 
-                if (dibit_counter < CRC_DIBITS) begin
-                    crc32rst <= 0;
-                    dibit_counter <= dibit_counter + 1;
-                end else begin
-                    dibit_counter <= 0;
-                    state <= Idle;
-                    crc32rst <= 1;
-                end
-            end
+            //     if (dibit_counter < CRC_DIBITS) begin
+            //         crc32rst <= 0;
+            //         dibit_counter <= dibit_counter + 1;
+            //     end else begin
+            //         dibit_counter <= 0;
+            //         state <= Idle;
+            //         crc32rst <= 1;
+            //     end
+            // end
         endcase
         end
     end

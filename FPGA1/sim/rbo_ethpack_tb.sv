@@ -26,6 +26,7 @@ module rbo_ethpack_tb;
     );
 
     eth_packer eth_packer (
+    .cancelled(0),
     .clk(clk),
     .rst(rst),
     .axiiv(rbo_axiov),
@@ -33,6 +34,28 @@ module rbo_ethpack_tb;
     .stall(stall),
     .phy_txen(phy_txen),
     .phy_txd(phy_txd)
+    );
+
+    logic ether_axiov;
+    logic [1:0] ether_axiod;
+    ether uut (
+        .clk(clk),
+        .rst(rst),
+        .rxd(phy_txd),
+        .crsdv(phy_txen),
+        .axiov(ether_axiov),
+        .axiod(ether_axiod)
+        );
+
+    logic kill, done;
+
+    cksum cksum (
+    .clk(clk),
+    .rst(rst),
+    .axiiv(ether_axiov),
+    .axiid({ether_axiod}),
+    .done(done), 
+    .kill(kill)
     );
 
     always begin
@@ -58,8 +81,7 @@ module rbo_ethpack_tb;
         // $display("Idle");
         for (int i = 0; i < 1000; i = i + 1) begin
             if (!stall) begin
-                pixel = 8'b11111111;
-                
+                pixel = 8'b11111111; 
             end
             #20;
             // $display("%d     %1b       %2b", i[10:0], phy_txen, phy_txd);
