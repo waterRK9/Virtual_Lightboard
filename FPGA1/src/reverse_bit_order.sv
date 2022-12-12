@@ -20,10 +20,6 @@ logic [3:0] byte_bit_counter;
 logic [8:0] pixel_counter;
 logic [8:0] audio_counter;
 
-logic[7:0] test_pixel;
-
-logic[5:0] row_counter;
-
 typedef enum {SendAddress, SendPixel, SendAudio} States;
 
 //try combinational output
@@ -50,7 +46,6 @@ always_comb begin
 
             SendPixel: begin
                 axiod = {pixel[1 + byte_bit_counter], pixel[byte_bit_counter]};
-                // axiod = {test_pixel[1 + byte_bit_counter], test_pixel[byte_bit_counter]};
             end
 
             SendAudio: begin
@@ -70,8 +65,6 @@ always_ff @(posedge clk) begin
         byte_bit_counter <= 8; //for timing, will reset to 0 upon returning to send address
         pixel_counter <= 0;
         audio_counter <= 0;
-        // test_pixel <= 8'b11000000;
-        row_counter <= 0;
 
     end else if (!stall) begin
         case(state)
@@ -90,23 +83,21 @@ always_ff @(posedge clk) begin
             if (byte_bit_counter >= 6) byte_bit_counter <= 0;
             else byte_bit_counter <= byte_bit_counter + 2;
 
-            if (addr_bit_counter < 12) addr_bit_counter <= addr_bit_counter + 1;
-            else begin
-                addr_bit_counter <= 0;
-                state <= SendPixel;
+            if (byte_bit_counter < 8) begin
+                if (addr_bit_counter < 12) addr_bit_counter <= addr_bit_counter + 1;
+                else begin
+                    addr_bit_counter <= 0;
+                    state <= SendPixel;
+                    byte_bit_counter <= 0;
+                end
             end
         end
         SendPixel: begin
             axiov <= 1;
             //switch to next pixel 2 cycles early to give BRAM time to change
             if (byte_bit_counter == 4) begin 
-                if (pixel_addr < 76800) begin
-                    pixel_addr <= pixel_addr + 1;
-                    // test_pixel <= ~test_pixel;
-                end else begin 
-                    pixel_addr <= 0;
-                    // test_pixel <= 0;
-                end
+                if (pixel_addr < 76800) pixel_addr <= pixel_addr + 1;
+                else pixel_addr <= 0;
             end
 
             // cycles the byte counter every 8 bits
@@ -117,13 +108,6 @@ always_ff @(posedge clk) begin
             if (pixel_counter < 320) pixel_counter <= byte_bit_counter + 1;
             else begin
                 pixel_counter <= 0;
-                // // NEW LOGIC FOR TESTING
-                // if (row_counter < 60) row_counter <= row_counter + 1;
-                // else begin 
-                //     row_counter <= 0;
-                //     test_pixel <= test_pixel + 8'b00000001;
-                // end
-                // // END NEW LOGIC
                 state <= SendAudio;
             end
         end
