@@ -80,7 +80,7 @@ always_ff @(posedge clk) begin
             // end
 
             // cycles the byte counter every 8 bits
-            if (byte_bit_counter >= 6) byte_bit_counter <= 0;
+            if (byte_bit_counter >= 6 || addr_bit_counter >= 12) byte_bit_counter <= 0;
             else byte_bit_counter <= byte_bit_counter + 2;
 
             if (byte_bit_counter < 8) begin
@@ -108,6 +108,7 @@ always_ff @(posedge clk) begin
             if (pixel_counter < 320) pixel_counter <= byte_bit_counter + 1;
             else begin
                 pixel_counter <= 0;
+                addr_bit_counter <= 0;
                 state <= SendAudio;
             end
         end
