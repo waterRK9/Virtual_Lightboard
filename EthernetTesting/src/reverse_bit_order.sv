@@ -83,10 +83,13 @@ always_ff @(posedge clk) begin
             if (byte_bit_counter >= 6) byte_bit_counter <= 0;
             else byte_bit_counter <= byte_bit_counter + 2;
 
-            if (addr_bit_counter < 12) addr_bit_counter <= addr_bit_counter + 1;
-            else begin
-                addr_bit_counter <= 0;
-                state <= SendPixel;
+            if (byte_bit_counter < 8) begin
+                if (addr_bit_counter < 12) addr_bit_counter <= addr_bit_counter + 1;
+                else begin
+                    addr_bit_counter <= 0;
+                    state <= SendPixel;
+                    byte_bit_counter <= 0;
+                end
             end
         end
         SendPixel: begin
