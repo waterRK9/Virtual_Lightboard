@@ -18,7 +18,7 @@ module image_audio_splitter(
 
 typedef enum {Idle, RecieveAddr, RecievePixels, RecieveAudio} States;
 
-logic [8:0] output_counter; //going to 320 at the max
+logic [17:0] output_counter; //going to 320 at the max
 
 logic [1:0] state;
 logic [2:0] byte_bit_counter;
@@ -67,7 +67,7 @@ always_ff @(posedge clk) begin
 
             pixel <= {pixel[5:0], axiid};
 
-            if (output_counter < 320) output_counter <= output_counter + 1;
+            if (output_counter < 1280) output_counter <= output_counter + 1;
             else begin
                 output_counter <= 0;
                 state <= RecieveAudio;

@@ -142,7 +142,7 @@ module image_audio_splitter_tb;
         #10
         
         pixel = 8'b00011011;
-        for (int i = 0; i < 1000; i = i + 1) begin
+        for (int i = 0; i < 6000; i = i + 1) begin
             #20;
             if (old_rbo_pixel_addr != rbo_pixel_addr) pixel <= pixel;
             old_rbo_pixel_addr <= rbo_pixel_addr;

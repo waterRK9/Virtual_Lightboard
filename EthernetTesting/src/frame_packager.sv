@@ -23,6 +23,8 @@ always_ff @(posedge clk) begin
         pixel_axiod <= 0;
     end else begin
         if (addr_axiiv) addr_axiod <= addr_axiid[16:0]; //trunate from 24bit transmittion to 17bit BRAM address
+
+        else if (addr_axiod >= 76800) addr_axiod <= 0;
         else if (pixel_axiiv) addr_axiod <= addr_axiod + 1;
 
         if (pixel_axiiv) begin
