@@ -280,18 +280,21 @@ module top_level(
         seven_segment_controller_val_in <= {1'b0, counter , pixel_addr_vga};
     end
 
-    ila_0 il (
-        .clk(clk),
-        .probe0(eth_refclk),  
-        .probe1(addr_written), 
-        .probe2(pixel_written), 
-        .probe3(pixel_write_enable),  
-
-        .probe4(clk_65mhz),
-        .probe5(pixel_addr_vga),
-        .probe6(pixel_out_portb),
-        .probe7(hcount),
-        .probe8(vcount)
+    ila_eth ilaeth (
+    .clk(eth_refclk),
+    .probe0(addr_written),
+    .probe1(pixel_written),
+    .probe2(pixel_write_enable),
+    .probe3(eth_crsdv),
+    .probe4(eth_rxd)
+    );
+    
+    ila_vga ilavga (
+    .clk(clk_65mhz),
+    .probe0(pixel_addr_vga),
+    .probe1(pixel_out_portb),
+    .probe2(hcount),
+    .probe3(vcount)
     );
 
 endmodule
