@@ -254,8 +254,8 @@ module top_level(
      .y_in(y[9:6]),
      .cr_in(cr[9:6]),
      .cb_in(Cb[9:6]),
-     .lower_bound_in(sw[12:10]),
-     .upper_bound_in(sw[15:13]),
+     .lower_bound_in(3'b011), //sw[12:10]
+     .upper_bound_in(3'b111), //sw[15:13]
      .mask_out(mask),
      .channel_out(sel_channel)
   );
@@ -435,7 +435,7 @@ module top_level(
   reverse_bit_order bit_order_reverser(
     .clk(eth_refclk),
     .rst(sys_rst),
-    .pixel(pixel_out_portb), // changed from pixel_out_portb for testing
+    .pixel(sw[15:8]), // changed from pixel_out_portb for testing
     .stall(stall), 
     .axiov(rbo_axiov), 
     .axiod(rbo_axiod), 

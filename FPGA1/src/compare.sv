@@ -41,9 +41,9 @@ module compare (
 
     //color params
     localparam YELLOW = 8'b11000000; // 11 is MSBs indicates that it is written on
-    localparam PINK = 8'b11000001;
-    localparam GREEN = 8'b11000010;
-    localparam RED = 8'b11000011;
+    localparam PINK = 8'b11010000;
+    localparam GREEN = 8'b11100000;
+    localparam RED = 8'b11110000;
 
     //for drawing threshold and crosshair
     localparam THRESHOLD_PIXEL = 2'b10;
