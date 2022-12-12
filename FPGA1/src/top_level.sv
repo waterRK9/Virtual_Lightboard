@@ -296,6 +296,7 @@ module top_level(
     .pixelread_forvga_valid(vgareadpixel),
     .pixeladdr_forvga_valid(vgasndaddr)
   );
+
   
   //FRAME BUFFER FOR IMAGE + WRITING
   //Two Clock Frame Buffer:
@@ -397,7 +398,7 @@ module top_level(
   assign vga_hs = ~hsync_pipe[2];  //TODO: needs to use pipelined signal (PS7)
   assign vga_vs = ~vsync_pipe[2];  //TODO: needs to use pipelined signal (PS7)
 
-  // // test pixel generator for ethernet
+  // // // test pixel generator for ethernet
   // logic [7:0] ethernet_pixel;
   // logic [23:0] prev_rbo_addr;
   // logic [16:0] counter;
@@ -406,10 +407,10 @@ module top_level(
   // always_ff @(posedge eth_refclk) begin
   //   prev_rbo_addr <= pixel_addr_rbo;
   //   if (prev_rbo_addr != pixel_addr_rbo) begin
-  //     if (counter < 19200) counter <= counter + 1;
-  //     else if (counter == 19200) begin
+  //     if (counter < 160) counter <= counter + 1;
+  //     else if (counter == 160) begin
   //       counter <= 0;
-  //       if (color < 3) begin
+  //       if (color == 2'b00) begin
   //         color <= color + 1;
   //       end else begin
   //         color <= 2'b00;
@@ -434,7 +435,7 @@ module top_level(
   reverse_bit_order bit_order_reverser(
     .clk(eth_refclk),
     .rst(sys_rst),
-    .pixel(8'b11111111), // changed from pixel_out_portb for testing
+    .pixel(pixel_out_portb), // changed from pixel_out_portb for testing
     .stall(stall), 
     .axiov(rbo_axiov), 
     .axiod(rbo_axiod), 
