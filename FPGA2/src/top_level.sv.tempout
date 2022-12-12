@@ -128,17 +128,6 @@ module top_level(
         .pixel_axiod(pixel_written)
     );
 
-    logic [7:0] vga_test_pixel_for_bram;
-    logic [16:0] vga_test_addr_bram;
-    logic vga_test_pixel_valid;
-
-    bram_test_populater vga_tester (
-        .ethclk_in(eth_refclk),
-        .pixel_for_bram(vga_test_pixel_for_bram),
-        .pixel_addr_for_bram(vga_test_addr_bram),
-        .pixel_for_bram_valid(vga_test_pixel_valid)
-    );
-
     //FRAME BUFFER FOR IMAGE + WRITING
     //Two Clock Frame Buffer:
     //Data written on 50Hz (From ethernet)
@@ -149,10 +138,10 @@ module top_level(
         .RAM_DEPTH(320*240))
         frame_buffer (
         //Write Side (50MHz)
-        .addra(vga_test_addr_bram),
+        .addra(addr_written),
         .clka(eth_refclk),
-        .wea(vga_test_pixel_valid), //question: do I need rotate here? What if I read it out without rotating?
-        .dina(vga_test_pixel_for_bram),
+        .wea(pixel_write_enable), //question: do I need rotate here? What if I read it out without rotating?
+        .dina(pixel_written),
         .ena(1'b1),
         .regcea(1'b1),
         .rsta(sys_rst),
@@ -291,19 +280,19 @@ module top_level(
         seven_segment_controller_val_in <= {1'b0, counter , pixel_addr_vga};
     end
 
-    // ila_0 il (
-    //     .clk(clk),
-    //     .probe0(eth_refclk),  
-    //     .probe1(addr_written), 
-    //     .probe2(pixel_written), 
-    //     .probe3(pixel_write_enable),  
+    ila_0 il (
+        .clk(clk),
+        .probe0(eth_refclk),  
+        .probe1(addr_written), 
+        .probe2(pixel_written), 
+        .probe3(pixel_write_enable),  
 
-    //     .probe4(clk_65mhz),
-    //     .probe5(pixel_addr_vga),
-    //     .probe6(pixel_out_portb),
-    //     .probe7(hcount),
-    //     .probe8(vcount)
-    // );
+        .probe4(clk_65mhz),
+        .probe5(pixel_addr_vga),
+        .probe6(pixel_out_portb),
+        .probe7(hcount),
+        .probe8(vcount)
+    );
 
 endmodule
 
