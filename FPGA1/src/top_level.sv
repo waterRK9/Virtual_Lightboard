@@ -444,7 +444,7 @@ module top_level(
   reverse_bit_order bit_order_reverser(
     .clk(eth_refclk),
     .rst(sys_rst),
-    .pixel(pixel_for_rbo), // changed from pixel_out_portb for testing
+    .pixel(pixel_out_portb), // changed from pixel_out_portb for testing
     .stall(stall), 
     .axiov(rbo_axiov), 
     .axiod(rbo_axiod), 
