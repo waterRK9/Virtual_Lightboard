@@ -15,7 +15,7 @@ module image_audio_splitter_tb;
     logic [7:0] ias_pixel_out;
     logic [7:0] ias_audio_out;
 
-    logic [7:0] pixel;
+    logic [7:0] pixel, audio;
     logic stall;
 
     logic rbo_axiov;
@@ -29,6 +29,7 @@ module image_audio_splitter_tb;
     .clk(clk),
     .rst(rst),
     .pixel(pixel),
+    .audio(audio),
     .stall(stall),
     .axiov(rbo_axiov), 
     .axiod(rbo_axiod),
@@ -143,6 +144,7 @@ module image_audio_splitter_tb;
         #10
 
         pixel = 8'b10101010;
+        audio = 8'b11111111;
         for (int i = 0; i < 6000; i = i + 1) begin
             #20;
             if (old_rbo_pixel_addr != rbo_pixel_addr) begin

@@ -61,7 +61,7 @@ always_ff @(posedge clk) begin
 
             pixel <= {pixel[5:0], axiid};
 
-            if (output_counter < 1280) output_counter <= output_counter + 1;
+            if (output_counter < 1280 - 1) output_counter <= output_counter + 1;
             else begin
                 output_counter <= 0;
                 state <= RecieveAudio;
@@ -76,7 +76,7 @@ always_ff @(posedge clk) begin
             if (byte_bit_counter == 6) audio_axiov <= 1;
             else audio_axiov <= 0;
 
-            audio <= {audio[7:2], axiid};
+            audio <= {audio[5:0], axiid};
         end
         endcase
     end else begin
