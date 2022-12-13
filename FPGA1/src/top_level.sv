@@ -30,8 +30,8 @@ module top_level(
   input wire btnu, //btnu (used for recording audio)
   input wire vauxp3,
   input wire vauxn3,
-  input wire vn_in,
-  input wire vp_in,
+  // input wire vn_in,
+  // input wire vp_in,
   output logic aud_pwm,
   output logic aud_sd
   );
@@ -409,7 +409,7 @@ module top_level(
 
 
   //AUDIO COMPONENTS:
-  parameter SAMPLE_COUNT = 2846;//gets approximately (will generate audio at approx 48 kHz sample rate.
+  parameter SAMPLE_COUNT = 1423;//gets approximately (will generate audio at approx 48 kHz sample rate.
     
   logic [15:0] sample_counter;
   logic [11:0] adc_data;
@@ -424,7 +424,7 @@ module top_level(
   assign aud_sd = 1;
   assign sample_trigger = (sample_counter == SAMPLE_COUNT);
 
-  always_ff @(posedge clk_100mhz)begin
+  always_ff @(posedge eth_refclk)begin
       if (sample_counter == SAMPLE_COUNT)begin
           sample_counter <= 16'b0;
       end else begin
@@ -437,7 +437,7 @@ module top_level(
   end
 
   //ADC uncomment when activating!
-  xadc_wiz_0 my_adc ( .dclk_in(clk_100mhz), .daddr_in(8'h13), //read from 0x13 for a
+  xadc_wiz_0 my_adc ( .dclk_in(eth_refclk), .daddr_in(8'h13), //read from 0x13 for a
                      .vauxn3(vauxn3),.vauxp3(vauxp3),
                      .vp_in(1),.vn_in(1),
                      .di_in(16'b0),
@@ -448,10 +448,12 @@ module top_level(
   //                 .record_in(btnc),.ready_in(sample_trigger),
   //                 .filter_in(sw[0]),.mic_in(sampled_adc_data[11:4]),
   //                 .data_out(recorder_data));   
-                                                                                          
+     
+  // 0 cycle latency                                                                                    
   volume_control vc (.vol_in(sw[9:7]),
                       .signal_in(sampled_adc_data[11:4]), .signal_out(vol_out));
-  pwm (.clk_in(clk_100mhz), .rst_in(sys_rst), .level_in({~vol_out[7],vol_out[6:0]}), .pwm_out(pwm_val));
+  
+  pwm p(.clk_in(eth_refclk), .rst_in(sys_rst), .level_in({~vol_out[7],vol_out[6:0]}), .pwm_out(pwm_val));
   assign aud_pwm = pwm_val?1'bZ:1'b0; 
 
   //ETHERNET COMPONENTS:
@@ -474,6 +476,7 @@ module top_level(
     .clk(eth_refclk),
     .rst(sys_rst),
     .pixel(pixel_out_portb), // changed from pixel_out_portb for testing
+    .audio(vol_out),
     .stall(stall), 
     .axiov(rbo_axiov), 
     .axiod(rbo_axiod), 

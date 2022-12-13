@@ -1,12 +1,12 @@
 `default_nettype none
 
 module recorder(
-  input logic clk_in,              // 100MHz system clock
-  input logic rst_in,               // 1 to reset to initial state
-  input logic record_in,            // 0 for playback, 1 for record
-  input logic ready_in,             // 1 when data is available
-  input logic filter_in,            // 1 when using low-pass filter
-  input logic signed [7:0] mic_in,         // 8-bit PCM data from mic
+  input wire clk_in,              // 100MHz system clock
+  input wire rst_in,               // 1 to reset to initial state
+  input wire record_in,            // 0 for playback, 1 for record
+  input wire ready_in,             // 1 when data is available
+  input wore filter_in,            // 1 when using low-pass filter
+  input wire signed [7:0] mic_in,         // 8-bit PCM data from mic
   output logic signed [7:0] data_out       // 8-bit PCM data to headphone
 ); 
     logic [7:0] tone_750;

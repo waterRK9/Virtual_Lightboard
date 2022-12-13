@@ -1,7 +1,7 @@
 `default_nettype none
 
 //PWM generator for audio generation!
-module pwm (input clk_in, input rst_in, input [7:0] level_in, output logic pwm_out);
+module pwm (input wire clk_in, input wire rst_in, input wire [7:0] level_in, output logic pwm_out);
     logic [7:0] count;
     assign pwm_out = count<level_in;
     always_ff @(posedge clk_in)begin
