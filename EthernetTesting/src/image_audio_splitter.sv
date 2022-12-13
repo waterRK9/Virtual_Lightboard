@@ -85,7 +85,7 @@ always_ff @(posedge clk) begin
         byte_bit_counter <= 0;
 
         pixel <= 0;
-        audio <= 0;
+        // audio <= 0;
         addr_axiov <= 0;
         $display("setting pixel_axiov to 0");
         pixel_axiov <= 0;

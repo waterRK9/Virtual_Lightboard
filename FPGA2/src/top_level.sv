@@ -6,6 +6,7 @@ module top_level(
     input wire btnc, //btnc (used for reset)
     input wire eth_crsdv,
     input wire [1:0] eth_rxd,
+    input wire [15:13] sw,
 
     output logic [15:0] led, // note: 7 seg for testing visualization, remove later
     output logic ca, cb, cc, cd, ce, cf, cg,
@@ -15,7 +16,9 @@ module top_level(
     output logic eth_refclk,
 
     output logic [3:0] vga_r, vga_g, vga_b,
-    output logic vga_hs, vga_vs
+    output logic vga_hs, vga_vs,
+    output logic aud_pwm,
+    output logic aud_sd
     );
 
     //system reset switch linking
@@ -280,6 +283,53 @@ module top_level(
         seven_segment_controller_val_in <= {1'b0, counter , pixel_addr_vga};
     end
 
+    //Audio
+    logic [7:0] vol_out;
+    logic pwm_val; //pwm signal (HI/LO)
+    assign aud_sd = 1;
+
+    volume_control vc (
+        .vol_in(sw[15:13]),
+        .signal_in(audio_in), 
+        .signal_out(vol_out));
+    
+    pwm pwm1 (
+        .clk_in(eth_refclk), 
+        .rst_in(sys_rst), 
+        .level_in({~vol_out[7],vol_out[6:0]}), 
+        .pwm_out(pwm_val));
+
+    assign aud_pwm = pwm_val?1'bZ:1'b0; 
+
+    //Volume Control
+    module volume_control (
+        input wire [2:0] vol_in, 
+        input wire signed [7:0] signal_in, 
+        output logic signed[7:0] signal_out
+        );
+        logic [2:0] shift;
+        assign shift = 3'd7 - vol_in;
+        assign signal_out = signal_in>>>shift;
+    endmodule
+
+    //PWM generator for audio generation!
+    module pwm (
+        input wire clk_in, 
+        input wire rst_in, 
+        input wire [7:0] level_in, 
+        output logic pwm_out
+        );
+        logic [7:0] count;
+        assign pwm_out = count<level_in;
+        always_ff @(posedge clk_in)begin
+            if (rst_in)begin
+                count <= 8'b0;
+            end else begin
+                count <= count+8'b1;
+            end
+        end
+    endmodule
+
     // ila_eth ilaeth (
     // .clk(eth_refclk),
     // .probe0(addr_written),
@@ -300,16 +350,3 @@ module top_level(
 endmodule
 
 `default_nettype wire
-
-// ila planning
-
-//eth clk
-// addr_written 17
-// pixel_written 8
-// pixel_write_enable 1
-
-//vga clk
-//pixel_addr_vga 17
-//pixel_out_portb 8
-//hcount 11
-//vount 10
