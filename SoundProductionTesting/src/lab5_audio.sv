@@ -55,7 +55,7 @@ module top_level(   input clk_100mhz,
                                                                                             
     volume_control vc (.vol_in(sw[15:13]),
                        .signal_in(recorder_data), .signal_out(vol_out));
-    pwm pwn (.clk_in(clk_100mhz), .rst_in(btnd), .level_in({~vol_out[7],vol_out[6:0]}), .pwm_out(pwm_val));
+    pwm (.clk_in(clk_100mhz), .rst_in(btnd), .level_in({~vol_out[7],vol_out[6:0]}), .pwm_out(pwm_val));
     assign aud_pwm = pwm_val?1'bZ:1'b0; 
     
 endmodule
@@ -87,149 +87,18 @@ module recorder(
                                  .step_in(ready_in), .amp_out(tone_750));
     //generate a 440 Hz tone
     sine_generator  #(.PHASE_INCR(32'd39370534)) tone440hz(.clk_in(clk_in), .rst_in(rst_in), 
-                               .step_in(ready_in), .amp_out(tone_440));   
-    logic [7:0] filter_input;
-    logic [17:0] filter_out;
-    fir31 fir ( .clk_in(clk_in),
-                .rst_in(rst_in),
-                .ready_in(ready_in),
-                .x_in(filter_input),
-                .y_out(filter_out));   
-
-    logic [7:0] data_to_bram;
-    logic [7:0] data_from_bram;
-    logic [15:0] addr;
-    logic wea;
-    blk_mem_gen_0 mybram (.addra(addr), .clka(clk_in), .dina(data_to_bram), .douta(data_from_bram), 
-                   .ena(1), .wea(wea));    
-
-    parameter MEMORY_DEPTH = 64000;
-    logic [15:0] lastSample;
-    logic [3:0] eightCounter;      
-
-   typedef enum {Record, Playback} states;       
-   logic [1:0] state;                
+                               .step_in(ready_in), .amp_out(tone_440));                          
+    //logic [7:0] data_to_bram;
+    //logic [7:0] data_from_bram;
+    //logic [15:0] addr;
+    //logic wea;
+    //  blk_mem_gen_0(.addra(addr), .clka(clk_in), .dina(data_to_bram), .douta(data_from_bram), 
+    //                .ena(1), .wea(bram_write));                                  
     
     always_ff @(posedge clk_in)begin
-      if (rst_in) begin
-        addr <= 0;
-        lastSample <= 0;
-        eightCounter <= 0;
-        state <= Playback;
-      end else if (filter_in) begin
         // data_out = filter_in?tone_440:tone_750; //send tone immediately to output
-        case (state)
-          Record: begin
-            // controls incrementing address every 8 samples
-            if (record_in) begin
-              if (addr < MEMORY_DEPTH - 1 && ready_in) begin
-                if (eightCounter == 8) begin
-                  addr <= addr + 1;
-                  lastSample <= lastSample + 1;
-                  eightCounter <= 0;
-                end else if (eightCounter < 8) begin
-                  eightCounter <= eightCounter + 1;
-                end 
-
-                // control write signal sepeartely, only writing every 8 samples
-                if (eightCounter == 8) wea <= 1;
-                else wea <= 0;
-
-                filter_input <= mic_in;
-                data_to_bram <= filter_out[17:10];
-                data_out <= filter_out[17:10];
-              end
-              
-            end else begin
-              state <= Playback;
-              addr <= 0;
-              eightCounter <= 0;
-              wea <= 0;
-            end
-          end
-          Playback: begin
-            if (record_in) begin
-              state <= Record;
-              addr <= 0;
-              lastSample <= 0;
-              eightCounter <= 0;
-            end else begin
-              if (ready_in) begin
-                // controls incrementing address every 8 cycles
-                if (addr < lastSample - 1) begin
-                    if (eightCounter == 8) begin
-                      addr <= addr + 1;
-                      eightCounter <= 0;
-                      filter_input <= data_from_bram;
-                    end else if (eightCounter < 8) begin
-                      filter_input <= 0;
-                      eightCounter <= eightCounter + 1;
-                  end
-                end else if (addr >= lastSample -1) begin
-                  addr <= 0;
-                  eightCounter <= 0;
-                end
-
-                data_out <= filter_out[14:7];
-              end
-            end
-          end
-        endcase
-      end else begin
-        case (state)
-          Record: begin
-            // controls incrementing address every 8 samples
-            if (record_in) begin
-              if (addr < MEMORY_DEPTH - 1 && ready_in) begin
-                if (eightCounter == 8) begin
-                  addr <= addr + 1;
-                  lastSample <= lastSample + 1;
-                  eightCounter <= 0;
-                end else if (eightCounter < 8) begin
-                  eightCounter <= eightCounter + 1;
-                end 
-
-                // control write signal sepeartely, only writing every 8 samples
-                if (eightCounter == 8) wea <= 1;
-                else wea <= 0;
-
-                data_to_bram <= mic_in;
-                data_out <= mic_in;
-              end
-            end else begin
-              state <= Playback;
-              addr <= 0;
-              eightCounter <= 0;
-              wea <= 0;
-            end
-          end
-          Playback: begin
-            if (record_in) begin
-              state <= Record;
-              addr <= 0;
-              lastSample <= 0;
-              eightCounter <= 0;
-            end else begin
-              if (ready_in) begin
-                // controls incrementing address every 8 cycles
-                if (addr < lastSample - 1) begin
-                    if (eightCounter == 8) begin
-                      addr <= addr + 1;
-                      eightCounter <= 0;
-                    end else if (eightCounter < 8) begin
-                      eightCounter <= eightCounter + 1;
-                  end
-                end else if (addr >= lastSample -1) begin
-                  addr <= 0;
-                  eightCounter <= 0;
-                end
-
-                data_out <= data_from_bram;
-              end
-            end
-          end
-        endcase
-      end
+        if (record_in) data_out = mic_in;
+        else data_out = filter_in?tone_440:tone_750; //send tone immediately to output
     end                            
 endmodule                              
 
@@ -252,44 +121,15 @@ module fir31(
   input signed [7:0] x_in,
   output logic signed [17:0] y_out
 );
-  logic signed [9:0] coeff_out;
-  logic [7:0] sample [31:0];  // 32 element array each 8 bits wide
-  logic [4:0] offset; //pointer for the array! (5 bits because 32 elements in above array! Do not make larger)
-  logic [4:0] index; //for accumulator
-
-  logic [4:0] sample_num;
-  logic signed [17:0] accumulator;
-  logic [4:0] probe;
-  coeffs31 coeffs (.index_in(index),.coeff_out(coeff_out));
-  
+  // for now just pass data through
   always_ff @(posedge clk_in) begin
-    // if (ready_in) y_out <= {x_in,10'd0};
-    if (rst_in) begin
-      for (int i = 0; i < 32; i = i+1) begin
-        sample[i] <= 8'b0;
-      end
-
-      offset <= 0;
-      y_out <= 0;
-      index <= 0;
-      accumulator <= 0;
-    end else begin
-      if (ready_in) begin
-        sample[offset] <= x_in;
-        offset <= offset + 1; //allow this to overflow and wrap
-        y_out <= y_out;
-        index <= 0;
-        sample_num <= offset-index;
-      end else begin
-        index <= (index == 30)? index: index + 1;
-        sample_num <= offset-index;
-        probe <= ($signed(coeff_out) * $signed(sample[sample_num]));
-        accumulator <= (index == 30)? accumulator: accumulator + ($signed(coeff_out) * $signed(sample[sample_num]));
-        y_out <= (index == 30)? accumulator: y_out;
-      end
-    end
+    if (ready_in) y_out <= {x_in,10'd0};
   end
 endmodule
+
+
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //

@@ -5,6 +5,7 @@ module reverse_bit_order(
     input wire clk,
     input wire rst,
     input wire [7:0] pixel,
+    input wire [7:0] audio,
     input wire stall,
 
     output logic axiov,
@@ -17,7 +18,7 @@ logic [1:0] state;
 logic [5:0] addr_bit_counter;
 logic [3:0] byte_bit_counter;
 
-logic [8:0] pixel_counter;
+logic [11:0] pixel_counter;
 logic [8:0] audio_counter;
 
 typedef enum {SendAddress, SendPixel, SendAudio} States;
@@ -49,7 +50,7 @@ always_comb begin
             end
 
             SendAudio: begin
-                axiod = {pixel[1 + byte_bit_counter], pixel[byte_bit_counter]};
+                axiod = {audio[1 + byte_bit_counter], audio[byte_bit_counter]};
             end
             default: axiod = 0;
         endcase
@@ -105,7 +106,7 @@ always_ff @(posedge clk) begin
             else byte_bit_counter <= byte_bit_counter + 2;
 
             //once 320 pixels sent, switch to sending Audio
-            if (pixel_counter < 320) pixel_counter <= byte_bit_counter + 1;
+            if (pixel_counter < 320 * 4 -1) pixel_counter <= pixel_counter + 1;
             else begin
                 pixel_counter <= 0;
                 addr_bit_counter <= 0;
@@ -116,6 +117,9 @@ always_ff @(posedge clk) begin
         SendAudio: begin
             axiov <= 1;
             // QUESTION: How are we pumping audio into this module? 
+            if (byte_bit_counter >= 6) byte_bit_counter <= 0;
+            else byte_bit_counter <= byte_bit_counter + 2;
+
         end
         endcase
     end else if (stall) begin //same as everything in rst, except for reseting the pixel_addr
