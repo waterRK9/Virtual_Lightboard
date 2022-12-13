@@ -128,6 +128,7 @@ module image_audio_splitter_tb;
     end
 
     logic [23:0] old_rbo_pixel_addr;
+    logic [2:0] pixel_counter;
 
     initial begin
         $dumpfile("obj/image_audio_splitter.vcd");
@@ -140,11 +141,21 @@ module image_audio_splitter_tb;
         #20;
         rst = 0;
         #10
-        
+
         pixel = 8'b00011011;
         for (int i = 0; i < 6000; i = i + 1) begin
             #20;
-            if (old_rbo_pixel_addr != rbo_pixel_addr) pixel <= pixel;
+            if (old_rbo_pixel_addr != rbo_pixel_addr) begin
+                if (pixel_counter < 3) pixel_counter <= pixel_counter + 1;
+                else pixel_counter <= 0;
+
+                case (pixel_counter) 
+                3'b000: pixel = 8'b00011011;
+                3'b001: pixel = 8'b11000000;
+                3'b010: pixel = 8'b00011011;
+                default: pixel = 8'b00011011;
+                endcase
+            end
             old_rbo_pixel_addr <= rbo_pixel_addr;
         end
 
