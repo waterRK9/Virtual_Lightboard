@@ -24,7 +24,16 @@ module top_level(
   output logic [1:0] eth_txd,
   output logic eth_refclk,
   output logic eth_rstn,
-  input wire eth_crsdv
+  input wire eth_crsdv,
+
+  // additional params for audio stuff
+  input wire btnu, //btnu (used for recording audio)
+  input wire vauxp3,
+  input wire vauxn3,
+  input wire vn_in,
+  input wire vp_in,
+  output logic aud_pwm,
+  output logic aud_sd
   );
 
   //system reset switch linking
@@ -398,32 +407,52 @@ module top_level(
   assign vga_hs = ~hsync_pipe[2];  //TODO: needs to use pipelined signal (PS7)
   assign vga_vs = ~vsync_pipe[2];  //TODO: needs to use pipelined signal (PS7)
 
-  // // // test pixel generator for ethernet
-  // logic [7:0] ethernet_pixel;
-  // logic [23:0] prev_rbo_addr;
-  // logic [16:0] counter;
-  // logic [1:0] color = 2'b00;
 
-  // always_ff @(posedge eth_refclk) begin
-  //   prev_rbo_addr <= pixel_addr_rbo;
-  //   if (prev_rbo_addr != pixel_addr_rbo) begin
-  //     if (counter < 160) counter <= counter + 1;
-  //     else if (counter == 160) begin
-  //       counter <= 0;
-  //       if (color == 2'b00) begin
-  //         color <= color + 1;
-  //       end else begin
-  //         color <= 2'b00;
-  //       end
-  //     end 
-  //   end
+  //AUDIO COMPONENTS:
+  parameter SAMPLE_COUNT = 2846;//gets approximately (will generate audio at approx 48 kHz sample rate.
     
-  // end 
+  logic [15:0] sample_counter;
+  logic [11:0] adc_data;
+  logic [11:0] sampled_adc_data;
+  logic sample_trigger;
+  logic adc_ready;
+  logic enable;
+  logic [7:0] recorder_data;             
+  logic [7:0] vol_out;
+  logic pwm_val; //pwm signal (HI/LO)
+  
+  assign aud_sd = 1;
+  assign sample_trigger = (sample_counter == SAMPLE_COUNT);
 
-  // always_comb begin
-  //   ethernet_pixel = {6'b110000, color};
-  //   // yellow pink green red
-  // end
+  always_ff @(posedge clk_100mhz)begin
+      if (sample_counter == SAMPLE_COUNT)begin
+          sample_counter <= 16'b0;
+      end else begin
+          sample_counter <= sample_counter + 16'b1;
+      end
+      if (sample_trigger) begin
+          sampled_adc_data <= {~adc_data[11],adc_data[10:0]}; //convert to signed. incoming data is offset binary
+          //https://en.wikipedia.org/wiki/Offset_binary
+      end
+  end
+
+  //ADC uncomment when activating!
+  xadc_wiz_0 my_adc ( .dclk_in(clk_100mhz), .daddr_in(8'h13), //read from 0x13 for a
+                     .vauxn3(vauxn3),.vauxp3(vauxp3),
+                     .vp_in(1),.vn_in(1),
+                     .di_in(16'b0),
+                     .do_out(adc_data),.drdy_out(adc_ready),
+                     .den_in(1), .dwe_in(0));
+
+  // recorder myrec( .clk_in(clk_100mhz),.rst_in(btnd),
+  //                 .record_in(btnc),.ready_in(sample_trigger),
+  //                 .filter_in(sw[0]),.mic_in(sampled_adc_data[11:4]),
+  //                 .data_out(recorder_data));   
+                                                                                          
+  volume_control vc (.vol_in(sw[9:7]),
+                      .signal_in(sampled_adc_data[11:4]), .signal_out(vol_out));
+  pwm (.clk_in(clk_100mhz), .rst_in(sys_rst), .level_in({~vol_out[7],vol_out[6:0]}), .pwm_out(pwm_val));
+  assign aud_pwm = pwm_val?1'bZ:1'b0; 
 
   //ETHERNET COMPONENTS:
   // logic between ethernet modules
