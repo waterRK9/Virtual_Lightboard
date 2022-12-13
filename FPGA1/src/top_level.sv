@@ -432,10 +432,19 @@ module top_level(
   logic [1:0] rbo_axiod;
   logic [23:0] pixel_addr_rbo;
 
+
+  logic [7:0] pixel_for_rbo;
+  always_comb begin
+    if (pixel_out_portb[7:6] == 2'b11) begin 
+      pixel_for_rbo = pixel_out_portb;
+    end else pixel_for_rbo = 8'b00000000; // black
+  end
+  
+
   reverse_bit_order bit_order_reverser(
     .clk(eth_refclk),
     .rst(sys_rst),
-    .pixel(sw[15:8]), // changed from pixel_out_portb for testing
+    .pixel(pixel_for_rbo), // changed from pixel_out_portb for testing
     .stall(stall), 
     .axiov(rbo_axiov), 
     .axiod(rbo_axiod), 
