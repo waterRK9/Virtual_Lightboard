@@ -56,7 +56,7 @@ always_ff @(posedge clk) begin
         end
         RecievePixels: begin
             addr_axiov <= 0;
-            if (byte_bit_counter == 4) pixel_axiov <= 1;
+            if (byte_bit_counter == 6) pixel_axiov <= 1;
             else pixel_axiov <= 0;
 
             pixel <= {pixel[5:0], axiid};

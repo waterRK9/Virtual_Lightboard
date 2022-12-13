@@ -84,7 +84,7 @@ always_ff @(posedge clk) begin
             else byte_bit_counter <= byte_bit_counter + 2;
 
             if (byte_bit_counter < 8) begin
-                if (addr_bit_counter < 12) addr_bit_counter <= addr_bit_counter + 1;
+                if (addr_bit_counter < 11) addr_bit_counter <= addr_bit_counter + 1;
                 else begin
                     addr_bit_counter <= 0;
                     state <= SendPixel;

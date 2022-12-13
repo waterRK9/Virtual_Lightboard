@@ -104,10 +104,7 @@ always_comb begin
         SendLength: begin
             phy_txen = 1'b1;
             // phy_txd = 2'b01; //note: FPGA2 doesn't care about length either right now, we could potentially use it to error check for drops
-            if (dibit_counter == 7) phy_txd = 2'b01;
-            else if (dibit_counter == 3 || dibit_counter == 4 || dibit_counter == 6) phy_txd = 2'b11;
-            else if (dibit_counter == 0 || dibit_counter == 1 || dibit_counter == 2) phy_txd = 2'b10;
-            else phy_txd = 2'b0;
+            phy_txd = 2'b11;
 
             if (dibit_counter > 6) stall = 0;
             else stall = 1;
