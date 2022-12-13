@@ -12,11 +12,11 @@ module vga_mux (
   always_comb begin
     case (pixel_type)
       2'b11: begin // pixel was drawn on
-        case (scaled_pixel_in[5:0]) 
-          6'b000001: pixel_out = 12'hA26; // magenta color
-          6'b000010: pixel_out = 12'h0F0; // green
-          6'b000011: pixel_out = 12'hF00; // red
-          6'b000000: pixel_out = 12'hFF0; // yellow
+        case (scaled_pixel_in[5:4]) 
+          2'b01: pixel_out = 12'hA26; // magenta color
+          2'b10: pixel_out = 12'h0F0; // green
+          2'b11: pixel_out = 12'hF00; // red
+          2'b00: pixel_out = 12'hFF0; // yellow
           default: pixel_out = 12'hFFF; // default white - this shouldn't happen
         endcase
       end
